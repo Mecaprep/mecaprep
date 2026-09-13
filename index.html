@@ -1101,8 +1101,8 @@
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Fiches Pannes &amp; Diagnostic, tous thèmes</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Résiliable à tout moment</li>
           </ul>
-          <button class="btn btn-primary btn-block" id="subscribeBtn">S'abonner — démo</button>
-          <div class="price-note">Mode démo MVP · aucun paiement réel</div>
+          <button class="btn btn-primary btn-block" id="subscribeBtn">S'abonner</button>
+          <div class="price-note">Paiement sécurisé par Stripe · résiliable à tout moment</div>
         </article>
         <article class="price-card reveal-item">
           <div class="ticket-top"><span class="ticket-no">Devis · B</span><h3>À l'unité</h3></div>
@@ -1113,8 +1113,8 @@
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Sa fiche PDF incluse</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Valable pour un thème ou un scan</li>
           </ul>
-          <button class="btn btn-ghost btn-block" id="buyCreditBtn">Acheter 1 crédit — démo</button>
-          <div class="price-note">Mode démo MVP · aucun paiement réel</div>
+          <button class="btn btn-ghost btn-block" id="buyCreditBtn">Acheter 1 crédit</button>
+          <div class="price-note">Paiement sécurisé par Stripe</div>
         </article>
       </div>
     </div>
@@ -1132,7 +1132,7 @@
       <div class="foot-links"><span>CGU</span><span>Confidentialité</span><span>Contact</span></div>
       <button class="reset-link" id="resetDemo">Réinitialiser la démo</button>
     </div>
-    <div class="foot-note">MVP de démonstration — les achats et l'abonnement sont simulés localement dans ton navigateur.</div>
+    <div class="foot-note">Paiements traités par Stripe · comptes gérés par Supabase — MecaPrep ne stocke jamais tes identifiants de paiement.</div>
     <div class="foot-note">Fiabilité du contenu : les questions marquées « source officielle » s'appuient sur des documents publics Éduscol/BNSEEP (référentiels, sujets et corrigés d'examen). Les fiches Pannes &amp; Diagnostic marquées « source vérifiée » s'appuient sur des ressources techniques automobiles en ligne (garages, réseaux de pièces détachées). Tout le reste provient de connaissances générales du métier et n'a pas été vérifié sur une source précise — à faire valider par un professionnel de la maintenance automobile avant toute publication.</div>
   </div>
 </footer>
@@ -1187,7 +1187,7 @@
             <li>Fiches PDF illimitées</li>
             <li>Pannes &amp; Diagnostic</li>
           </ul>
-          <button class="btn btn-primary btn-block" id="paywallSubscribe">S'abonner — démo</button>
+          <button class="btn btn-primary btn-block" id="paywallSubscribe">S'abonner</button>
         </div>
         <div class="paywall-card">
           <h4>À l'unité</h4>
@@ -1196,10 +1196,10 @@
             <li>1 quiz débloqué</li>
             <li>Fiche PDF incluse</li>
           </ul>
-          <button class="btn btn-outline btn-block" id="paywallBuy">Acheter 1 crédit — démo</button>
+          <button class="btn btn-outline btn-block" id="paywallBuy">Acheter 1 crédit</button>
         </div>
       </div>
-      <div class="price-note">Mode démo MVP — aucun paiement réel n'est effectué.</div>
+      <div class="price-note">Paiement traité par Stripe — MecaPrep ne voit et ne stocke jamais ton numéro de carte.</div>
     </div>
   </div>
 </div>
@@ -1233,7 +1233,7 @@
       </form>
       <div class="price-note" style="margin-top:12px;">Gratuit, sans engagement — aucun paiement n'est demandé à cette étape.</div>
       <button type="button" class="btn btn-ghost btn-block" id="signupSkip" style="margin-top:10px;display:none;">Voir mon résultat</button>
-      <div class="price-note" style="margin-top:16px;">Compte géré par Supabase (authentification) — ton mot de passe n'est jamais stocké par MecaPrep. Abonnement et crédits restent simulés localement.</div>
+      <div class="price-note" style="margin-top:16px;">Compte géré par Supabase (authentification), paiement traité par Stripe — ton mot de passe et ton numéro de carte ne transitent jamais par MecaPrep.</div>
     </div>
   </div>
 </div>
@@ -2084,17 +2084,61 @@
   function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
   var state = loadState();
 
-  /* ---------------- Supabase (authentication only, for now) ----------------
+  /* ---------------- Supabase (auth + real entitlements) ----------------
      Project URL + anon public key are meant to be shipped in client code —
      they only grant what this project's Row Level Security policies allow.
      The service_role key must NEVER appear here or anywhere client-side.
-     Nothing else is wired to Supabase yet: premium status, credits and quiz
-     progress still live in localStorage exactly as before. */
+
+     Premium status and credits are no longer decided locally: this app
+     only ever READS them from the `entitlements` table (RLS: a visitor can
+     read their own row, nobody can write it from the browser). The only
+     writer is the stripe-webhook Edge Function, server-side, once Stripe
+     actually confirms a payment — see supabase/functions/. Quiz progress
+     itself stays in localStorage; that part is unchanged. */
   var SUPABASE_URL = "https://owcvskwvtqggmglihtrv.supabase.co";
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y3Zza3d2dHFnZ21nbGlodHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4ODM0OTUsImV4cCI6MjEwNDQ1OTQ5NX0.ENjZnpKlI9XfioFfpgTcG8wtbfbtORSByU5ySh6cTLw";
   var supa = (window.supabase && window.supabase.createClient)
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
+  var entitlementsChannel = null;
+  var pendingActionKey = "mecaprep_pending_action"; // survives the Stripe redirect via sessionStorage
+
+  /* Pull the visitor's real entitlements row and mirror it into the same
+     state.premium/state.credits every gating check already reads — no
+     other code in the app needs to know Supabase exists. */
+  async function syncEntitlements(userId){
+    if(!supa || !userId) return;
+    try{
+      var res = await supa.from("entitlements").select("premium, credits").eq("user_id", userId).maybeSingle();
+      var row = res && res.data;
+      state.premium = !!(row && row.premium);
+      state.credits = (row && row.credits) || 0;
+      saveState();
+      renderStatus(); renderGarage(); renderDiagGrid();
+      resolveStashedActionIfReady();
+    }catch(e){ /* offline or transient — keep last known local values */ }
+  }
+  function resolveStashedActionIfReady(){
+    var stashed = sessionStorage.getItem(pendingActionKey);
+    if(!stashed) return;
+    sessionStorage.removeItem(pendingActionKey);
+    pendingAction = stashed;
+    resolvePendingAction();
+  }
+  /* Live updates: the webhook can write the real row a few seconds after
+     the visitor is redirected back from Stripe, so a one-off read on load
+     isn't enough — this makes premium/credits appear the moment Stripe
+     actually confirms, no manual refresh needed. */
+  function subscribeEntitlements(userId){
+    if(!supa) return;
+    if(entitlementsChannel){ supa.removeChannel(entitlementsChannel); entitlementsChannel = null; }
+    if(!userId) return;
+    entitlementsChannel = supa
+      .channel("entitlements-" + userId)
+      .on("postgres_changes", { event: "*", schema: "public", table: "entitlements", filter: "user_id=eq." + userId },
+        function(){ syncEntitlements(userId); })
+      .subscribe();
+  }
   if(supa){
     /* a session may already exist (page reload, returning visitor) */
     supa.auth.getSession().then(function(res){
@@ -2104,14 +2148,88 @@
         state.accountEmail = session.user.email;
         saveState();
         renderStatus();
+        subscribeEntitlements(session.user.id);
+        syncEntitlements(session.user.id);
       }
     });
     supa.auth.onAuthStateChange(function(_event, session){
       state.hasAccount = !!session;
       state.accountEmail = session ? session.user.email : null;
+      if(!session){ state.premium = false; state.credits = 0; }
       saveState();
+      subscribeEntitlements(session ? session.user.id : null);
+      if(session) syncEntitlements(session.user.id);
     });
   }
+  /* Starts a real Stripe Checkout for the signed-in visitor. `contextKey`
+     (a pendingAction, e.g. "theme:transmission") is stashed across the
+     redirect to Stripe and back, so the app can resume exactly what the
+     visitor was trying to unlock once the webhook confirms payment. */
+  async function startCheckout(plan, contextKey){
+    if(!supa){ toast("Paiement indisponible pour le moment."); return; }
+    var sessionRes = await supa.auth.getSession();
+    var session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if(!session){ toast("Connecte-toi d'abord."); return; }
+    if(contextKey) sessionStorage.setItem(pendingActionKey, contextKey);
+    else sessionStorage.removeItem(pendingActionKey);
+    toast("Redirection vers le paiement…");
+    try{
+      var res = await fetch(SUPABASE_URL + "/functions/v1/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + session.access_token,
+          "apikey": SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ plan: plan })
+      });
+      var data = await res.json().catch(function(){ return null; });
+      if(res.ok && data && data.url){ window.location.href = data.url; }
+      else { toast((data && data.error) || "Impossible de démarrer le paiement — réessaie."); }
+    }catch(e){
+      toast("Erreur réseau — réessaie.");
+    }
+  }
+  /* Spends exactly one credit server-side (see supabase/sql — the DB
+     guard refuses to go negative). Returns true only if a credit was
+     actually deducted; the caller must not unlock anything on false. */
+  async function spendCredit(){
+    if(!supa) return false;
+    var sessionRes = await supa.auth.getSession();
+    var session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if(!session) return false;
+    try{
+      var res = await fetch(SUPABASE_URL + "/functions/v1/spend-credit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + session.access_token,
+          "apikey": SUPABASE_ANON_KEY
+        }
+      });
+      var data = await res.json().catch(function(){ return null; });
+      if(res.ok && data && data.ok){
+        state.credits = data.credits; saveState(); renderStatus();
+        return true;
+      }
+      return false;
+    }catch(e){ return false; }
+  }
+  /* Stripe sends the visitor back to ?checkout=success|cancelled#/tarifs.
+     The real unlock comes from the webhook + the realtime sync above —
+     this just gives immediate feedback and tidies the URL. */
+  (function handleCheckoutReturn(){
+    var params = new URLSearchParams(location.search);
+    var checkout = params.get("checkout");
+    if(checkout === "success"){
+      toast("Paiement reçu — confirmation en cours…");
+      history.replaceState(null, "", location.pathname + location.hash);
+    } else if(checkout === "cancelled"){
+      sessionStorage.removeItem(pendingActionKey);
+      toast("Paiement annulé.");
+      history.replaceState(null, "", location.pathname + location.hash);
+    }
+  })();
 
   function isThemeUnlocked(key){
     var t = THEMES[key];
@@ -2134,7 +2252,7 @@
     var label = document.getElementById("statusLabel");
     if(state.premium){
       pill.classList.add("is-premium");
-      label.textContent = "Premium (démo)";
+      label.textContent = "Premium";
     } else {
       pill.classList.remove("is-premium");
       label.textContent = state.credits > 0 ? state.credits + " crédit(s)" : "Gratuit";
@@ -3164,11 +3282,24 @@
   document.getElementById("paywallClose").addEventListener("click", closePaywall);
   paywallScrim.addEventListener("click", function(ev){ if(ev.target === paywallScrim) closePaywall(); });
 
-  function resolvePendingAction(){
+  async function resolvePendingAction(){
     if(!pendingAction) return;
     if(pendingAction.indexOf("theme:") === 0){
       var key = pendingAction.slice(6);
-      openThemeQuiz(key);
+      /* openThemeQuiz() itself never checks unlock status — this is the
+         one place that decides whether opening it is actually earned:
+         a subscription unlocks every theme for free (isThemeUnlocked),
+         otherwise this specific quiz costs exactly one credit, spent
+         here, right before opening it. */
+      if(isThemeUnlocked(key)){
+        openThemeQuiz(key);
+      } else if(state.credits > 0){
+        var ok = await spendCredit();
+        if(ok) openThemeQuiz(key);
+        else toast("Impossible de débiter le crédit — réessaie.");
+      } else {
+        toast("Ce thème nécessite un abonnement ou un crédit.");
+      }
     } else if(pendingAction.indexOf("diag:") === 0){
       var dKey = pendingAction.slice(5);
       if(state.premium){ openDiagFolders(dKey); }
@@ -3298,40 +3429,23 @@
     errorEl.textContent = "Compte créé — confirme ton adresse via l'email que tu viens de recevoir, puis reconnecte-toi ici.";
   });
 
+  /* All four buttons below now start a REAL Stripe Checkout instead of
+     flipping state locally — the actual unlock happens asynchronously,
+     once stripe-webhook confirms payment (see syncEntitlements/realtime
+     above, and resolvePendingAction for what happens right after). */
   document.getElementById("paywallSubscribe").addEventListener("click", function(){
-    requireAccount(function(){
-      state.premium = true; saveState(); renderStatus(); renderGarage(); renderDiagGrid();
-      toast("Abonnement activé (démo). Tous les thèmes et Pannes & Diagnostic sont débloqués.");
-      closePaywall(); resolvePendingAction();
-    });
+    requireAccount(function(){ startCheckout("subscription", pendingAction); });
   });
   document.getElementById("paywallBuy").addEventListener("click", function(){
-    requireAccount(function(){
-      state.credits += 1; saveState(); renderStatus();
-      toast("1 crédit ajouté (démo).");
-      if(pendingAction && pendingAction.indexOf("theme:") === 0){
-        var key = pendingAction.slice(6);
-        state.credits -= 1; saveState(); renderStatus();
-        closePaywall();
-        openThemeQuiz(key);
-        pendingAction = null;
-      } else {
-        closePaywall(); resolvePendingAction();
-      }
-    });
+    requireAccount(function(){ startCheckout("credit", pendingAction); });
   });
 
   document.getElementById("subscribeBtn").addEventListener("click", function(){
-    if(state.premium){ toast("Tu es déjà abonné (démo)."); return; }
-    requireAccount(function(){
-      openPaywall("none", "Active l'abonnement pour tout débloquer.");
-    });
+    if(state.premium){ toast("Tu es déjà abonné."); return; }
+    requireAccount(function(){ startCheckout("subscription", null); });
   });
   document.getElementById("buyCreditBtn").addEventListener("click", function(){
-    requireAccount(function(){
-      state.credits += 1; saveState(); renderStatus();
-      toast("1 crédit ajouté (démo). Utilise-le sur un thème verrouillé ou un scan.");
-    });
+    requireAccount(function(){ startCheckout("credit", null); });
   });
 
   document.getElementById("resetDemo").addEventListener("click", async function(){
@@ -3744,9 +3858,15 @@
 
     var startBtn = document.getElementById("scanStartBtn");
     if(startBtn){
-      startBtn.addEventListener("click", function(){
+      startBtn.addEventListener("click", async function(){
         if(!state.premium){
-          if(state.credits > 0){ state.credits -= 1; }
+          /* spend a real credit only when this isn't the free first scan —
+             the free allotment itself is a local-only flag, no server
+             call needed, nothing of monetary value to enforce there */
+          if(state.credits > 0){
+            var ok = await spendCredit();
+            if(!ok){ toast("Impossible de débiter le crédit — réessaie."); return; }
+          }
           state.scanUsed = true;
           saveState(); renderStatus();
         }
