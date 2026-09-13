@@ -1231,7 +1231,7 @@
       </form>
       <div class="price-note" style="margin-top:12px;">Gratuit, sans engagement — aucun paiement n'est demandé à cette étape.</div>
       <button type="button" class="btn btn-ghost btn-block" id="signupSkip" style="margin-top:10px;display:none;">Voir mon résultat</button>
-      <div class="price-note" style="margin-top:16px;">Mode démo MVP — aucune donnée n'est envoyée à un serveur ; le mot de passe n'est jamais conservé.</div>
+      <div class="price-note" style="margin-top:16px;">Compte géré par Supabase (authentification) — ton mot de passe n'est jamais stocké par MecaPrep. Abonnement et crédits restent simulés localement.</div>
     </div>
   </div>
 </div>
@@ -1298,6 +1298,7 @@
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/motion@13.2.0/dist/motion.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
   "use strict";
@@ -2080,6 +2081,35 @@
   }
   function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
   var state = loadState();
+
+  /* ---------------- Supabase (authentication only, for now) ----------------
+     Project URL + anon public key are meant to be shipped in client code —
+     they only grant what this project's Row Level Security policies allow.
+     The service_role key must NEVER appear here or anywhere client-side.
+     Nothing else is wired to Supabase yet: premium status, credits and quiz
+     progress still live in localStorage exactly as before. */
+  var SUPABASE_URL = "https://owcvskwvtqggmglihtrv.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93Y3Zza3d2dHFnZ21nbGlodHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4ODM0OTUsImV4cCI6MjEwNDQ1OTQ5NX0.ENjZnpKlI9XfioFfpgTcG8wtbfbtORSByU5ySh6cTLw";
+  var supa = (window.supabase && window.supabase.createClient)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+  if(supa){
+    /* a session may already exist (page reload, returning visitor) */
+    supa.auth.getSession().then(function(res){
+      var session = res && res.data && res.data.session;
+      if(session){
+        state.hasAccount = true;
+        state.accountEmail = session.user.email;
+        saveState();
+        renderStatus();
+      }
+    });
+    supa.auth.onAuthStateChange(function(_event, session){
+      state.hasAccount = !!session;
+      state.accountEmail = session ? session.user.email : null;
+      saveState();
+    });
+  }
 
   function isThemeUnlocked(key){
     var t = THEMES[key];
@@ -3191,28 +3221,79 @@
   document.getElementById("signupClose").addEventListener("click", closeSignupGate);
   signupSkipBtn.addEventListener("click", closeSignupGate);
   signupScrim.addEventListener("click", function(ev){ if(ev.target === signupScrim) closeSignupGate(); });
-  document.getElementById("signupForm").addEventListener("submit", function(ev){
+  /* Real Supabase Auth. The form has a single pair of fields (no separate
+     "log in" vs "sign up" toggle), so a submission tries signing in first —
+     this covers a returning visitor on a new browser/device — and only
+     attempts to create a new account if no session comes back. That also
+     means a wrong password on an existing email surfaces as "account
+     already exists" rather than a confusing generic failure. */
+  document.getElementById("signupForm").addEventListener("submit", async function(ev){
     ev.preventDefault();
     var emailInput = document.getElementById("signupEmail");
     var passwordInput = document.getElementById("signupPassword");
     var errorEl = document.getElementById("signupError");
+    var submitBtn = this.querySelector("button[type=submit]");
     var email = emailInput.value.trim();
     var password = passwordInput.value;
     var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    errorEl.style.color = "";
+    errorEl.textContent = "";
     if(!emailOk){ errorEl.textContent = "Adresse email invalide."; return; }
     if(password.length < 6){ errorEl.textContent = "Le mot de passe doit faire au moins 6 caractères."; return; }
-    state.hasAccount = true;
-    state.accountEmail = email;
-    saveState();
+    if(!supa){ errorEl.textContent = "Connexion au service de compte indisponible pour le moment — réessaie plus tard."; return; }
+
+    var originalLabel = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Connexion…";
+    function afterAuth(email){
+      state.hasAccount = true;
+      state.accountEmail = email;
+      saveState();
+      passwordInput.value = "";
+      document.getElementById("signupForm").reset();
+      errorEl.textContent = "";
+      signupScrim.classList.remove("open");
+      var cb = signupCallback;
+      signupCallback = null;
+      signupSkipCallback = null;
+      if(cb) cb();
+    }
+
+    var signIn = await supa.auth.signInWithPassword({ email: email, password: password });
+    if(signIn.data && signIn.data.session){
+      submitBtn.disabled = false; submitBtn.textContent = originalLabel;
+      toast("Connecté.");
+      afterAuth(email);
+      return;
+    }
+
+    var signUp = await supa.auth.signUp({ email: email, password: password });
+    submitBtn.disabled = false; submitBtn.textContent = originalLabel;
+    if(signUp.error){
+      var msg = signUp.error.message || "";
+      var code = signUp.error.code || "";
+      if(/already registered|already exists/i.test(msg)){
+        errorEl.textContent = "Un compte existe déjà avec cet email — vérifie ton mot de passe.";
+      } else if(code === "over_email_send_rate_limit" || /rate limit/i.test(msg)){
+        errorEl.textContent = "Trop de tentatives de création de compte pour le moment — réessaie dans quelques minutes.";
+      } else if(/password/i.test(msg)){
+        errorEl.textContent = "Mot de passe refusé : " + msg;
+      } else {
+        errorEl.textContent = "Impossible de créer le compte — réessaie dans un instant.";
+      }
+      return;
+    }
+    if(signUp.data && signUp.data.session){
+      toast("Compte créé.");
+      afterAuth(email);
+      return;
+    }
+    /* Signed up but no session yet: this Supabase project requires email
+       confirmation before first sign-in. Nothing to gate on yet, so the
+       modal stays open rather than pretending the visitor is authenticated. */
     passwordInput.value = "";
-    document.getElementById("signupForm").reset();
-    errorEl.textContent = "";
-    signupScrim.classList.remove("open");
-    var cb = signupCallback;
-    signupCallback = null;
-    signupSkipCallback = null;
-    toast("Compte créé (démo).");
-    if(cb) cb();
+    errorEl.style.color = "var(--c-ok)";
+    errorEl.textContent = "Compte créé — confirme ton adresse via l'email que tu viens de recevoir, puis reconnecte-toi ici.";
   });
 
   document.getElementById("paywallSubscribe").addEventListener("click", function(){
@@ -3251,8 +3332,11 @@
     });
   });
 
-  document.getElementById("resetDemo").addEventListener("click", function(){
+  document.getElementById("resetDemo").addEventListener("click", async function(){
     localStorage.removeItem(STORE_KEY);
+    /* also drop the real Supabase session — otherwise getSession() would
+       silently restore hasAccount=true right after the reload below. */
+    if(supa){ try{ await supa.auth.signOut(); }catch(e){} }
     location.reload();
   });
 
