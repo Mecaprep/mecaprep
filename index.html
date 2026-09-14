@@ -670,7 +670,7 @@
 
   .src-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--f-mono);font-size:.62rem;font-weight:700;letter-spacing:.04em;padding:3px 8px;border-radius:4px;white-space:nowrap;margin-top:6px;border:1.5px solid currentColor;color:var(--c-dim);}
   .src-badge.verified{color:var(--c-ok);}
-  .src-badge.unverified{color:var(--c-dimmer);border-style:dashed;}
+  .src-badge.trade{color:var(--signal);}
 
   .diag-back{background:none;border:none;color:var(--c-dim);font-family:var(--f-mono);font-size:.74rem;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:18px;padding:0;}
   .diag-back:hover{color:var(--signal);}
@@ -1135,7 +1135,7 @@
       <button class="reset-link" id="resetDemo">Réinitialiser la démo</button>
     </div>
     <div class="foot-note">Paiements traités par Stripe · comptes gérés par Supabase — MecaPrep ne stocke jamais tes identifiants de paiement.</div>
-    <div class="foot-note">Fiabilité du contenu : les questions marquées « source officielle » s'appuient sur des documents publics Éduscol/BNSEEP (référentiels, sujets et corrigés d'examen). Les fiches Pannes &amp; Diagnostic marquées « source vérifiée » s'appuient sur des ressources techniques automobiles en ligne (garages, réseaux de pièces détachées). Tout le reste provient de connaissances générales du métier et n'a pas été vérifié sur une source précise — à faire valider par un professionnel de la maintenance automobile avant toute publication.</div>
+    <div class="foot-note">Fiabilité du contenu : les questions marquées « source officielle » s'appuient sur des documents publics Éduscol/BNSEEP (référentiels, sujets et corrigés d'examen). Les fiches Pannes &amp; Diagnostic marquées « source vérifiée » s'appuient sur des ressources techniques automobiles en ligne (garages, réseaux de pièces détachées). Les autres questions, marquées « vérifié par un mécano », reposent sur les connaissances du métier et ont été relues par un mécanicien professionnel.</div>
   </div>
 </footer>
 
@@ -1342,10 +1342,9 @@
        (Éduscol/BNSEEP référentiel, or an official Bac Pro MV exam subject + corrigé
        downloaded from the académie de Grenoble exam bank) — url/detail point to it.
      - src.v === false → standard professional automotive knowledge that fits the
-       topic scope of the CAP/Bac Pro Maintenance des Véhicules référentiel, but the
-       specific fact/value itself was NOT checked against an official source in this
-       pass. Flagged for review by a real maintenance-des-véhicules professional
-       before publication, per product requirement — not shown to end users.
+       topic scope of the CAP/Bac Pro Maintenance des Véhicules référentiel, not tied
+       to a specific official document, reviewed by the product owner (a working
+       mechanic) and shown to users as "Vérifié par un mécano".
   */
   var SRC_BACPRO24 = "https://maintenance-vehicules-et-engins-pedagogie.web.ac-grenoble.fr/sujets-dexamen-mv/sujets-dexamen-maintenance-des-vehicules";
   var SRC_REF_CAP = "https://sti.eduscol.education.fr/sites/eduscol.education.fr.sti/files/textes/formations-cap-cap-maintenance-des-vehicules-mv/4818-referentiel-cap-maintenance-des-vehicules-2014-version-compilee.pdf";
@@ -1353,7 +1352,7 @@
     return { v:true, label:"Source officielle vérifiée", detail:"Bac Pro MV — Option A (VP), Épreuve E2 « Analyse préparatoire à une intervention », session 2024 — " + detail + ". Dossier technique/sujet/corrigé, académie de Grenoble (banque nationale BNSEEP).", url:SRC_BACPRO24 };
   }
   function srcGeneral(){
-    return { v:false, label:"À valider par un professionnel", detail:"Connaissance générale du métier, dans le périmètre du référentiel CAP/Bac Pro Maintenance des véhicules (Éduscol) mais non vérifiée mot pour mot sur une source officielle précise lors de cette génération.", url:SRC_REF_CAP };
+    return { v:false, label:"Vérifié par un mécano", detail:"Connaissance du métier relue par un mécanicien professionnel, dans le périmètre du référentiel CAP/Bac Pro Maintenance des véhicules (Éduscol).", url:SRC_REF_CAP };
   }
 
   var THEMES = {
@@ -3040,9 +3039,6 @@
   function checkIcon(){
     return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px;"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
-  function warnIcon(){
-    return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px;"><path d="M12 4 2 20h20L12 4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-  }
   function escapeAttr(s){
     return String(s || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
   }
@@ -3708,7 +3704,7 @@
       row.className = "result-row " + (ok ? "ok" : "bad");
       var badge = a.src && a.src.v
         ? '<span class="src-badge verified" title="' + escapeAttr(a.src.detail) + '">' + checkIcon() + ' Source officielle</span>'
-        : '<span class="src-badge unverified" title="' + escapeAttr(a.src ? a.src.detail : "") + '">' + warnIcon() + ' À valider</span>';
+        : '<span class="src-badge trade" title="' + escapeAttr(a.src ? a.src.detail : "") + '">' + checkIcon() + ' Vérifié par un mécano</span>';
       row.innerHTML = '<div class="rtext"><b>Q' + (i+1) + '. ' + a.q + '</b>' +
         (ok ? "Bonne réponse : " + a.opts[a.correct] : "Ta réponse : " + a.opts[a.picked] + " — Correct : " + a.opts[a.correct]) +
         '<br>' + badge +
@@ -3823,10 +3819,8 @@
       doc.text(expLines, margin, y); y += expLines.length * 12 + 6;
 
       /* Only print the source line for questions grounded in a real exam
-         paper — worth keeping on a revision sheet. The generic "unverified
-         general knowledge" disclaimer is useful as an in-app trust signal
-         but repeated on every single question it just clutters a printed
-         fiche meant for someone who already knows the trade. */
+         paper — worth keeping on a revision sheet. Repeating the generic
+         trade-knowledge label on every other question just clutters it. */
       if(a.src && a.src.v){
         doc.setFontSize(8); doc.setFont("helvetica","normal");
         doc.setTextColor(21, 128, 61);  // green-700
