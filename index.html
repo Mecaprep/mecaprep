@@ -1199,6 +1199,7 @@
           <button class="btn btn-outline btn-block" id="paywallBuy">Acheter 1 crédit</button>
         </div>
       </div>
+      <button class="btn btn-block" id="paywallUseCredit" style="display:none;margin-top:10px;">Utiliser mon crédit (<span id="paywallCreditCount">0</span> restant)</button>
       <div class="price-note">Paiement traité par Stripe — MecaPrep ne voit et ne stocke jamais ton numéro de carte.</div>
     </div>
   </div>
@@ -2118,12 +2119,16 @@
       resolveStashedActionIfReady();
     }catch(e){ /* offline or transient — keep last known local values */ }
   }
+  /* Deliberately does NOT auto-open whatever the visitor was about to
+     unlock when they left for Stripe: they might not want to start right
+     now. It just confirms the purchase went through — the content shows
+     as unlocked (or, for a credit, ready to spend via the paywall's
+     "Utiliser mon crédit" button) whenever they choose to open it. */
   function resolveStashedActionIfReady(){
     var stashed = sessionStorage.getItem(pendingActionKey);
     if(!stashed) return;
     sessionStorage.removeItem(pendingActionKey);
-    pendingAction = stashed;
-    resolvePendingAction();
+    toast("Paiement confirmé — ton contenu est prêt quand tu veux.");
   }
   /* Live updates: the webhook can write the real row a few seconds after
      the visitor is redirected back from Stripe, so a one-off read on load
@@ -3276,41 +3281,38 @@
   function openPaywall(contextKey, message){
     document.getElementById("paywallContext").textContent = message;
     pendingAction = contextKey;
+    var useCreditBtn = document.getElementById("paywallUseCredit");
+    var isThemeCtx = contextKey && contextKey.indexOf("theme:") === 0;
+    if(isThemeCtx && state.credits > 0){
+      document.getElementById("paywallCreditCount").textContent = state.credits;
+      useCreditBtn.style.display = "";
+    } else {
+      useCreditBtn.style.display = "none";
+    }
     paywallScrim.classList.add("open");
   }
   function closePaywall(){ paywallScrim.classList.remove("open"); }
   document.getElementById("paywallClose").addEventListener("click", closePaywall);
   paywallScrim.addEventListener("click", function(ev){ if(ev.target === paywallScrim) closePaywall(); });
 
-  async function resolvePendingAction(){
-    if(!pendingAction) return;
-    if(pendingAction.indexOf("theme:") === 0){
-      var key = pendingAction.slice(6);
-      /* openThemeQuiz() itself never checks unlock status — this is the
-         one place that decides whether opening it is actually earned:
-         a subscription unlocks every theme for free (isThemeUnlocked),
-         otherwise this specific quiz costs exactly one credit, spent
-         here, right before opening it. */
-      if(isThemeUnlocked(key)){
-        openThemeQuiz(key);
-      } else if(state.credits > 0){
-        var ok = await spendCredit();
-        if(ok) openThemeQuiz(key);
-        else toast("Impossible de débiter le crédit — réessaie.");
-      } else {
-        toast("Ce thème nécessite un abonnement ou un crédit.");
-      }
-    } else if(pendingAction.indexOf("diag:") === 0){
-      var dKey = pendingAction.slice(5);
-      if(state.premium){ openDiagFolders(dKey); }
-      else { toast("Pannes & Diagnostic nécessite l'abonnement complet — un crédit ne suffit pas."); }
-    } else if(pendingAction === "diag"){
-      navigateTo("diagnostic");
-    } else if(pendingAction === "scan"){
-      revealScanQuiz();
+  /* Spends an existing credit right away, without going through Stripe —
+     for a visitor who already bought a credit earlier and is now unlocking
+     a (different) theme with it. */
+  document.getElementById("paywallUseCredit").addEventListener("click", async function(){
+    if(!pendingAction || pendingAction.indexOf("theme:") !== 0) return;
+    var key = pendingAction.slice(6);
+    var btn = this;
+    btn.disabled = true;
+    var ok = await spendCredit();
+    btn.disabled = false;
+    if(ok){
+      pendingAction = null;
+      closePaywall();
+      openThemeQuiz(key);
+    } else {
+      toast("Impossible de débiter le crédit — réessaie.");
     }
-    pendingAction = null;
-  }
+  });
 
   /* ---------------- signup gate ----------------
      A non-account visitor must create an account (email + password) before
@@ -3432,7 +3434,7 @@
   /* All four buttons below now start a REAL Stripe Checkout instead of
      flipping state locally — the actual unlock happens asynchronously,
      once stripe-webhook confirms payment (see syncEntitlements/realtime
-     above, and resolvePendingAction for what happens right after). */
+     above); the visitor opens the unlocked content themselves afterwards. */
   document.getElementById("paywallSubscribe").addEventListener("click", function(){
     requireAccount(function(){ startCheckout("subscription", pendingAction); });
   });
@@ -3618,7 +3620,15 @@
           else toast("Téléchargement indisponible ici.");
         }
       } else {
-        toast("Téléchargement indisponible dans cet aperçu.");
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast("Fiche PDF téléchargée.");
       }
     } finally {
       btn.disabled = false;
