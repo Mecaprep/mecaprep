@@ -502,6 +502,9 @@
   .steps li.active .dot{background:var(--signal);animation:blink .8s ease-in-out infinite alternate;}
   .steps li.done{color:var(--c-dim);}
   .steps li.done .dot{background:var(--c-ok);}
+  .scan-quota{display:flex;gap:10px;align-items:flex-start;background:var(--signal);color:var(--ink);border:2px solid var(--edge);border-radius:12px;padding:11px 13px;margin:0 0 12px;font-size:.86rem;line-height:1.4;}
+  .scan-quota svg{flex:none;margin-top:1px;}
+  .scan-quota b{font-weight:800;}
   @keyframes blink{to{opacity:.45;}}
   .scan-panel{background:var(--c-card);border:2px solid var(--ink);border-radius:var(--r-lg);padding:30px;min-height:420px;display:flex;flex-direction:column;box-shadow:var(--shadow-sheet);position:relative;}
   .scan-panel::before{content:"FICHE GÉNÉRÉE";position:absolute;top:-11px;left:22px;background:var(--c-bg);padding:0 8px;font-family:var(--f-mono);font-size:.64rem;font-weight:700;letter-spacing:.14em;color:var(--c-dim);}
@@ -988,6 +991,7 @@
           <li data-step="2"><span class="dot"></span> Détection du thème</li>
           <li data-step="3"><span class="dot"></span> Génération des questions</li>
         </ol>
+        <div class="scan-quota" id="scanQuota"></div>
         <button class="btn btn-primary btn-block" id="analyzeBtn" disabled>Analyser la photo</button>
       </div>
       <div class="scan-panel" id="scanPanel">
@@ -2245,6 +2249,23 @@
     } else {
       pill.classList.remove("is-premium");
       label.textContent = state.credits > 0 ? state.credits + " crédit(s)" : "Gratuit";
+    }
+    renderScanQuota();
+  }
+
+  /* The free-scan rule is enforced server-side (analyze-scan); this just
+     states it right next to the button, where it matters. Keep "20 par
+     jour" in sync with SCAN_DAILY_CAP in supabase/functions/analyze-scan. */
+  function renderScanQuota(){
+    var el = document.getElementById("scanQuota");
+    if(!el) return;
+    var icon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.2"/><path d="M12 7.5v5l3 2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    if(state.premium){
+      el.innerHTML = icon + '<span><b>Abonnement actif : scans inclus</b>, jusqu\'à 20 par jour.</span>';
+    } else {
+      el.innerHTML = icon + '<span><b>1 scan gratuit par compte — usage unique.</b> Ensuite, 1 crédit par scan' +
+        (state.credits > 0 ? ' (il t\'en reste ' + state.credits + ')' : '') +
+        ', ou scans inclus avec l\'abonnement.</span>';
     }
   }
 
