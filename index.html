@@ -1120,7 +1120,7 @@
           <div class="price-num">4,99&nbsp;€ <span>/ mois</span></div>
           <ul class="price-list">
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Tous les thèmes de quiz débloqués</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Scans de cours illimités</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> 50 scans de cours par mois</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Fiches PDF illimitées</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Fiches Pannes &amp; Diagnostic, tous thèmes</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Résiliable à tout moment</li>
@@ -1138,7 +1138,7 @@
             <button type="button" class="pack-opt" data-plan="credit10" aria-pressed="false"><span><b>10 crédits</b><span class="pack-save">−29&nbsp;%</span><br><span class="pack-meta">0,70&nbsp;€ / quiz</span></span><span class="pack-price">6,99&nbsp;€</span></button>
           </div>
           <button class="btn btn-ghost btn-block" id="buyCreditBtn">Acheter 5 crédits</button>
-          <div class="price-note">Dès 7 quiz par mois, l'abonnement illimité revient moins cher.</div>
+          <div class="price-note">Dès 7 quiz par mois, l'abonnement revient moins cher.</div>
           <div class="price-note" style="margin-top:4px;">Paiement sécurisé par Stripe</div>
         </article>
       </div>
@@ -1178,7 +1178,7 @@
           <div class="price mono">4,99&nbsp;€<span style="font-size:.9rem;color:var(--c-dim);">/mois</span></div>
           <ul>
             <li>Tous les thèmes</li>
-            <li>Scans illimités</li>
+            <li>50 scans / mois</li>
             <li>Fiches PDF illimitées</li>
             <li>Pannes &amp; Diagnostic</li>
           </ul>
@@ -2253,19 +2253,23 @@
     renderScanQuota();
   }
 
-  /* The free-scan rule is enforced server-side (analyze-scan); this just
-     states it right next to the button, where it matters. Keep "20 par
-     jour" in sync with SCAN_DAILY_CAP in supabase/functions/analyze-scan. */
+  /* The scan rules are enforced server-side (analyze-scan); this just
+     states them right next to the button, where it matters. Keep "50"
+     in sync with PREMIUM_SCANS_PER_MONTH in supabase/functions/analyze-scan.
+     premiumScansLeft is only known once a scan has come back this visit. */
+  var premiumScansLeft = null;
   function renderScanQuota(){
     var el = document.getElementById("scanQuota");
     if(!el) return;
     var icon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.2"/><path d="M12 7.5v5l3 2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     if(state.premium){
-      el.innerHTML = icon + '<span><b>Abonnement actif : scans inclus</b>, jusqu\'à 20 par jour.</span>';
+      el.innerHTML = icon + (premiumScansLeft === null
+        ? '<span><b>Abonnement actif : 50 scans inclus par mois.</b> Le compteur repart le 1er du mois.</span>'
+        : '<span><b>Abonnement actif : il te reste ' + premiumScansLeft + ' scan(s) inclus ce mois-ci.</b> Le compteur repart le 1er du mois.</span>');
     } else {
       el.innerHTML = icon + '<span><b>1 scan gratuit par compte — usage unique.</b> Ensuite, 1 crédit par scan' +
         (state.credits > 0 ? ' (il t\'en reste ' + state.credits + ')' : '') +
-        ', ou scans inclus avec l\'abonnement.</span>';
+        ', ou 50 scans par mois avec l\'abonnement.</span>';
     }
   }
 
@@ -4045,7 +4049,11 @@
     }
     if(res.status === 402){
       scanError((data && data.error) || "Ton scan gratuit est déjà utilisé.");
-      openPaywall("scan", "Ton scan gratuit est déjà utilisé. Prends des crédits ou l'abonnement pour scanner d'autres cours.");
+      if(data && data.code === "monthly_limit"){
+        premiumScansLeft = 0; renderScanQuota();
+      } else {
+        openPaywall("scan", "Ton scan gratuit est déjà utilisé. Prends des crédits ou l'abonnement pour scanner d'autres cours.");
+      }
       return;
     }
     if(!res.ok || !data){
@@ -4070,6 +4078,7 @@
     scanSubcat = sc;
     scanExtractedText = data.extractedText || null;
     scanBilling = data.billing;
+    if(typeof data.premiumLeft === "number"){ premiumScansLeft = data.premiumLeft; renderScanQuota(); }
     analyzeBtn.disabled = false;
     analyzeBtn.textContent = "Analyser une autre photo";
     showScanResult();
@@ -4082,7 +4091,8 @@
     var textLine = scanExtractedText ? ('« ' + escapeAttr(scanExtractedText) + ' »') : "Aucun texte exploitable détecté sur cette photo — thème identifié à partir des éléments visuels.";
     var billingNote =
       scanBilling === "free" ? "Scan gratuit utilisé — les suivants se font avec un crédit ou l'abonnement." :
-      scanBilling === "credit" ? "1 crédit utilisé pour ce scan." : "";
+      scanBilling === "credit" ? "1 crédit utilisé pour ce scan." :
+      scanBilling === "premium" && premiumScansLeft !== null ? "Scan inclus dans ton abonnement — il t'en reste " + premiumScansLeft + " ce mois-ci." : "";
     scanPanel.innerHTML = '<div class="detected-text">' + textLine + '</div>' +
       '<div class="eyebrow" style="margin-bottom:8px;">Thème détecté</div>' +
       '<h3 style="font-size:1.5rem;margin-bottom:6px;">' + t.title + ' — ' + sc.title + '</h3>' +

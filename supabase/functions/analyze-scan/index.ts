@@ -6,10 +6,10 @@
 // browser — decides whether the scan is allowed and how it is paid for,
 // so the free-scan limit can't be reset by clearing browser storage:
 //
-//   premium subscriber        → included
-//   first scan of the account → free (exactly one per account, ever)
-//   otherwise, a credit left  → one credit is spent
-//   otherwise                 → 402, the app opens the paywall
+//   subscriber, < 50 this month → included
+//   first scan of the account   → free (exactly one per account, ever)
+//   otherwise, a credit left    → one credit is spent
+//   otherwise                   → 402 (paywall, or "monthly limit" message)
 //
 // A scan that fails, or finds no usable theme, refunds its credit and
 // doesn't consume the free scan. Every call (charged or not) counts
@@ -24,6 +24,7 @@ import Anthropic from "npm:@anthropic-ai/sdk@0.125.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const FREE_SCANS_PER_ACCOUNT = 1;
+const PREMIUM_SCANS_PER_MONTH = 50; // keep in sync with the Tarifs/paywall copy in index.html
 const SCAN_DAILY_CAP = 20;
 const MAX_IMAGE_BASE64_CHARS = 6_500_000; // ≈ 4.9 MB decoded, under the API's 5 MB per-image limit
 const MAX_TARGETS_CHARS = 12_000;
@@ -113,9 +114,22 @@ Deno.serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId).eq("kind", "scan").eq("billing", "free");
 
+    // Subscribers get PREMIUM_SCANS_PER_MONTH included per calendar month
+    // (UTC); past that they fall through to the free scan / credits below.
+    let premiumUsed = 0;
+    if (ent?.premium) {
+      const now = new Date();
+      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+      const { count } = await db
+        .from("ai_usage")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId).eq("kind", "scan").eq("billing", "premium").gte("created_at", monthStart);
+      premiumUsed = count ?? 0;
+    }
+
     let billing: "premium" | "free" | "credit";
     let creditsLeft: number | null = ent?.credits ?? 0;
-    if (ent?.premium) {
+    if (ent?.premium && premiumUsed < PREMIUM_SCANS_PER_MONTH) {
       billing = "premium";
     } else if ((freeUsed ?? 0) < FREE_SCANS_PER_ACCOUNT) {
       billing = "free";
@@ -124,8 +138,10 @@ Deno.serve(async (req) => {
       if (spendErr) throw spendErr;
       if (remaining === null) {
         return json({
-          error: "Ton scan gratuit est déjà utilisé — prends un crédit ou l'abonnement pour continuer.",
-          code: "payment_required",
+          error: ent?.premium
+            ? `Tu as utilisé tes ${PREMIUM_SCANS_PER_MONTH} scans inclus ce mois-ci. Ils reviennent le 1er du mois — ou prends des crédits sur la page Tarifs pour continuer.`
+            : "Ton scan gratuit est déjà utilisé — prends un crédit ou l'abonnement pour continuer.",
+          code: ent?.premium ? "monthly_limit" : "payment_required",
         }, 402);
       }
       billing = "credit";
@@ -197,7 +213,8 @@ Deno.serve(async (req) => {
     }
 
     await db.from("ai_usage").insert({ user_id: userId, kind: "scan", billing });
-    return json({ ...result, billing, credits: creditsLeft });
+    const premiumLeft = billing === "premium" ? PREMIUM_SCANS_PER_MONTH - premiumUsed - 1 : null;
+    return json({ ...result, billing, credits: creditsLeft, premiumLeft });
   } catch (e) {
     console.error("analyze-scan error:", e);
     return json({ error: "Erreur interne — réessaie." }, 500);
