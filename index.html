@@ -532,6 +532,14 @@
   .price-card.highlight .btn-primary:hover{background:var(--edge);}
   .price-note{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.04em;color:var(--c-dim);margin-top:12px;text-align:center;}
   .price-card.highlight .price-note{color:var(--ink);}
+  .pack-list{display:flex;flex-direction:column;gap:8px;margin:14px 0 16px;}
+  .pack-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:9px 12px;border:2px solid var(--c-line);border-radius:10px;background:var(--c-card);font:inherit;font-size:.9rem;line-height:1.3;color:var(--c-fg);cursor:pointer;text-align:left;}
+  .pack-opt[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);}
+  .pack-opt .pack-meta{font-family:var(--f-mono);font-size:.66rem;color:var(--c-dim);}
+  .pack-opt .pack-price{font-weight:800;white-space:nowrap;}
+  .pack-list.compact{gap:5px;margin:0 0 12px;flex:1;}
+  .pack-list.compact .pack-opt{padding:5px 10px;font-size:.82rem;}
+  .pack-save{font-family:var(--f-mono);font-size:.6rem;font-weight:700;background:var(--c-ok);color:#fff;padding:2px 6px;border-radius:4px;margin-left:6px;vertical-align:1px;}
 
   /* ---------- footer ---------- */
   footer{background:var(--ink);padding:64px 0 calc(40px + var(--tabbar-h));border-top:2px solid var(--edge);}
@@ -794,6 +802,20 @@
     .results-actions{flex-direction:column;}
     .results-actions .btn{width:100%;}
     .paywall-grid{grid-template-columns:1fr;}
+    /* Stacked on a phone, both offers + the credit packs must still fit
+       the bottom sheet without scrolling: tighter chrome, features on two
+       columns, and no big "dès 0,70 €" line (each pack shows its price). */
+    #paywallScrim .modal-head{padding:12px 18px;}
+    #paywallScrim .modal-body{padding:14px 18px 16px;}
+    #paywallScrim #paywallContext{margin-bottom:10px;font-size:.9rem;line-height:1.4;}
+    #paywallScrim .paywall-grid{gap:10px;}
+    #paywallScrim .paywall-card{padding:12px 14px;}
+    #paywallScrim .paywall-card .price{font-size:1.35rem;line-height:1.15;margin:0 0 6px;}
+    #paywallScrim .paywall-card:last-child .price{display:none;}
+    #paywallScrim .paywall-card ul{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;margin-bottom:10px;}
+    #paywallScrim .paywall-card li{font-size:.78rem;}
+    #paywallScrim .paywall-card .btn{min-height:40px;padding:8px 14px;}
+    #paywallScrim .price-note{margin-top:10px;}
     .ticket-top{height:auto;}
     .price-card{-webkit-mask:none;mask:none;}
     .results-score{flex-direction:column;text-align:center;}
@@ -967,7 +989,7 @@
       <div>
         <p class="crumb">MecaPrep / <b>02 · Scanner IA</b></p>
         <h1 class="page-title">Ta photo de cours devient un quiz</h1>
-        <p class="page-lead">Prends ta fiche de cours en photo. L'IA lit le contenu réel et te propose le quiz correspondant. Premier scan offert.</p>
+        <p class="page-lead">Prends ta fiche de cours en photo. L'IA lit le contenu réel et te propose le quiz correspondant. Premier scan offert avec ton compte.</p>
       </div>
     </div>
   </section>
@@ -1101,22 +1123,24 @@
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Scans de cours illimités</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Fiches PDF illimitées</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Fiches Pannes &amp; Diagnostic, tous thèmes</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Assistant mécanique IA, 50 questions / jour</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Résiliable à tout moment</li>
           </ul>
           <button class="btn btn-primary btn-block" id="subscribeBtn">S'abonner</button>
           <div class="price-note">Paiement sécurisé par Stripe · résiliable à tout moment</div>
         </article>
         <article class="price-card reveal-item">
-          <div class="ticket-top"><span class="ticket-no">Devis · B</span><h3>À l'unité</h3></div>
-          <p class="sub">Pour un besoin ponctuel, sans engagement.</p>
-          <div class="price-num">0,99&nbsp;€ <span>/ quiz</span></div>
-          <ul class="price-list">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> 1 quiz débloqué au choix</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Sa fiche PDF incluse</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg> Valable pour un thème ou un scan</li>
-          </ul>
-          <button class="btn btn-ghost btn-block" id="buyCreditBtn">Acheter 1 crédit</button>
-          <div class="price-note">Paiement sécurisé par Stripe</div>
+          <div class="ticket-top"><span class="ticket-no">Devis · B</span><h3>Crédits</h3></div>
+          <p class="sub">Pour un besoin ponctuel, sans engagement. 1 crédit = 1 quiz ou 1 scan, avec sa fiche PDF.</p>
+          <div class="price-num">dès 0,70&nbsp;€ <span>/ quiz</span></div>
+          <div class="pack-list" id="tarifsPacks">
+            <button type="button" class="pack-opt" data-plan="credit" aria-pressed="false"><span><b>1 crédit</b></span><span class="pack-price">0,99&nbsp;€</span></button>
+            <button type="button" class="pack-opt" data-plan="credit5" aria-pressed="true"><span><b>5 crédits</b><span class="pack-save">−19&nbsp;%</span><br><span class="pack-meta">0,80&nbsp;€ / quiz</span></span><span class="pack-price">3,99&nbsp;€</span></button>
+            <button type="button" class="pack-opt" data-plan="credit10" aria-pressed="false"><span><b>10 crédits</b><span class="pack-save">−29&nbsp;%</span><br><span class="pack-meta">0,70&nbsp;€ / quiz</span></span><span class="pack-price">6,99&nbsp;€</span></button>
+          </div>
+          <button class="btn btn-ghost btn-block" id="buyCreditBtn">Acheter 5 crédits</button>
+          <div class="price-note">Dès 7 quiz par mois, l'abonnement illimité revient moins cher.</div>
+          <div class="price-note" style="margin-top:4px;">Paiement sécurisé par Stripe</div>
         </article>
       </div>
     </div>
@@ -1166,7 +1190,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </form>
-    <div class="chat-note" id="chatNote">Réponses IA basées sur des connaissances générales — pas de recherche web en direct dans cet outil. Vérifie les infos critiques auprès d'un professionnel.</div>
+    <div class="chat-note" id="chatNote">Réponses IA basées sur des connaissances générales, sans recherche web. Vérifie les infos critiques auprès d'un professionnel. 5 questions par jour en gratuit, 50 avec l'abonnement.</div>
   </div>
 </div>
 
@@ -1192,13 +1216,14 @@
           <button class="btn btn-primary btn-block" id="paywallSubscribe">S'abonner</button>
         </div>
         <div class="paywall-card">
-          <h4>À l'unité</h4>
-          <div class="price mono">0,99&nbsp;€</div>
-          <ul>
-            <li>1 quiz débloqué</li>
-            <li>Fiche PDF incluse</li>
-          </ul>
-          <button class="btn btn-outline btn-block" id="paywallBuy">Acheter 1 crédit</button>
+          <h4>Crédits</h4>
+          <div class="price mono">dès 0,70&nbsp;€</div>
+          <div class="pack-list compact" id="paywallPacks">
+            <button type="button" class="pack-opt" data-plan="credit" aria-pressed="false"><span>1 crédit</span><span class="pack-price">0,99&nbsp;€</span></button>
+            <button type="button" class="pack-opt" data-plan="credit5" aria-pressed="true"><span>5 crédits</span><span class="pack-price">3,99&nbsp;€</span></button>
+            <button type="button" class="pack-opt" data-plan="credit10" aria-pressed="false"><span>10 crédits</span><span class="pack-price">6,99&nbsp;€</span></button>
+          </div>
+          <button class="btn btn-outline btn-block" id="paywallBuy">Acheter 5 crédits</button>
         </div>
       </div>
       <button class="btn btn-block" id="paywallUseCredit" style="display:none;margin-top:10px;">Utiliser mon crédit (<span id="paywallCreditCount">0</span> restant)</button>
@@ -2061,7 +2086,7 @@
       var raw = localStorage.getItem(STORE_KEY);
       if(raw) return JSON.parse(raw);
     }catch(e){}
-    return { premium:false, credits:0, scanUsed:false, quizGateShown:false, scanGateShown:false, hasAccount:false, accountEmail:null };
+    return { premium:false, credits:0, quizGateShown:false, hasAccount:false, accountEmail:null };
   }
   function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
   var state = loadState();
@@ -3479,16 +3504,30 @@
   document.getElementById("paywallSubscribe").addEventListener("click", function(){
     requireAccount(function(){ startCheckout("subscription", pendingAction); });
   });
-  document.getElementById("paywallBuy").addEventListener("click", function(){
-    requireAccount(function(){ startCheckout("credit", pendingAction); });
-  });
+  /* Credit pack picker (Tarifs page and paywall): the pressed option sets
+     which pack the buy button checks out, and its label. */
+  var PACK_LABELS = { credit:"Acheter 1 crédit", credit5:"Acheter 5 crédits", credit10:"Acheter 10 crédits" };
+  function setupPackPicker(listId, buyBtnId, contextFn){
+    var list = document.getElementById(listId);
+    var buyBtn = document.getElementById(buyBtnId);
+    var selected = list.querySelector('.pack-opt[aria-pressed="true"]').getAttribute("data-plan");
+    list.querySelectorAll(".pack-opt").forEach(function(opt){
+      opt.addEventListener("click", function(){
+        list.querySelectorAll(".pack-opt").forEach(function(o){ o.setAttribute("aria-pressed", o === opt ? "true" : "false"); });
+        selected = opt.getAttribute("data-plan");
+        buyBtn.textContent = PACK_LABELS[selected];
+      });
+    });
+    buyBtn.addEventListener("click", function(){
+      requireAccount(function(){ startCheckout(selected, contextFn()); });
+    });
+  }
+  setupPackPicker("paywallPacks", "paywallBuy", function(){ return pendingAction; });
+  setupPackPicker("tarifsPacks", "buyCreditBtn", function(){ return null; });
 
   document.getElementById("subscribeBtn").addEventListener("click", function(){
     if(state.premium){ toast("Tu es déjà abonné."); return; }
     requireAccount(function(){ startCheckout("subscription", null); });
-  });
-  document.getElementById("buyCreditBtn").addEventListener("click", function(){
-    requireAccount(function(){ startCheckout("credit", null); });
   });
 
   document.getElementById("resetDemo").addEventListener("click", async function(){
@@ -3937,8 +3976,39 @@
     return lines.join("\n");
   }
 
-  analyzeBtn.addEventListener("click", async function(){
+  /* Phone photos are often 3-5 MB; Claude never looks at more than ~1568px
+     on the long edge anyway, so shrink before upload — faster on mobile
+     data and well under the API's per-image size limit. Also normalises
+     HEIC/PNG/whatever the browser can decode into plain JPEG. */
+  function downscaleImage(file, maxEdge){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function(){
+        var scale = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight));
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.naturalWidth * scale);
+        canvas.height = Math.round(img.naturalHeight * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        var dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        resolve({ mediaType:"image/jpeg", data: dataUrl.slice(dataUrl.indexOf(",") + 1) });
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error("decode failed")); };
+      img.src = url;
+    });
+  }
+
+  var scanBilling = null;
+  analyzeBtn.addEventListener("click", function(){
     if(!pickedFile) return;
+    requireAccount(runScan);
+  });
+
+  /* Whether this scan is free, costs a credit or is included in the
+     subscription is decided by the analyze-scan Edge Function, per
+     account — see supabase/functions/analyze-scan. */
+  async function runScan(){
     analyzeBtn.disabled = true;
     analyzeBtn.textContent = "Analyse en cours...";
     resetSteps();
@@ -3946,131 +4016,88 @@
     var steps = document.querySelectorAll("#scanSteps li");
     steps[0].classList.add("active");
 
-    if(!window.claude || typeof window.claude.use !== "function"){
-      scanError("Le scanner IA n'est pas disponible dans cet aperçu — ouvre l'artefact publié pour l'utiliser.");
-      return;
-    }
-    var sampleFn = null;
-    try { sampleFn = await window.claude.use("sample"); } catch(e){ sampleFn = null; }
-    if(!sampleFn){
-      scanError("Le scanner IA n'est pas disponible sur cette page.");
-      return;
-    }
-    var limits = null;
-    try { limits = await sampleFn.limits(); } catch(e){ limits = null; }
-    if(!limits || !limits.images){
-      scanError("L'analyse de photo n'est pas prise en charge dans cette vue.");
-      return;
-    }
+    var sessionRes = supa ? await supa.auth.getSession() : null;
+    var session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if(!session){ scanError("Reconnecte-toi pour utiliser le scanner."); return; }
+
+    var img;
+    try { img = await downscaleImage(pickedFile, 1568); }
+    catch(e){ scanError("Cette photo n'a pas pu être lue — essaie une autre image."); return; }
 
     steps[0].classList.remove("active"); steps[0].classList.add("done");
     steps[1].classList.add("active");
     scanPanel.innerHTML = '<div class="scan-placeholder"><p class="mono" style="color:var(--c-dim);">Extraction du texte et détection du thème…</p></div>';
 
-    var prompt = [
-      "Tu analyses la photo d'une fiche ou d'un support de cours de mécanique automobile (niveau CAP/Bac Pro Maintenance des Véhicules).",
-      "1. Transcris fidèlement, en 150 caractères maximum, le passage de texte le plus lisible et le plus significatif visible sur la photo. Si aucun texte exploitable n'est lisible, mets extractedText à null — n'invente jamais de texte.",
-      "2. Parmi cette liste de sujets disponibles (format clé_thème/clé_sous-thème — Thème / Sous-thème : description), choisis UNIQUEMENT celui qui correspond le mieux au contenu réellement visible sur la photo :",
-      buildScanTargets(),
-      "3. Si le contenu de la photo ne correspond clairement à aucun sujet de cette liste (photo illisible, hors mécanique automobile, ou sujet non couvert), réponds avec themeKey et subcatKey à null plutôt que de deviner.",
-      "Réponds UNIQUEMENT avec un objet JSON strict, sans aucun autre texte, de cette forme exacte : {\"extractedText\": string|null, \"themeKey\": string|null, \"subcatKey\": string|null}"
-    ].join("\n\n");
-
-    var result = null;
+    var res, data;
     try {
-      result = await sampleFn.json(prompt, { images: pickedFile, modelTier: "default", cache: false });
+      res = await fetch(SUPABASE_URL + "/functions/v1/analyze-scan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + session.access_token,
+          "apikey": SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ image: img.data, mediaType: img.mediaType, targets: buildScanTargets() })
+      });
+      data = await res.json().catch(function(){ return null; });
     } catch(e){
-      var code = e && e.code;
-      if(code === "not_granted") scanError("Tu dois autoriser l'accès à l'IA pour utiliser le scanner.");
-      else if(code === "images_unavailable" || code === "image_rejected") scanError("Cette photo n'a pas pu être analysée (format ou taille non supporté) — essaie une autre image.");
-      else if(code === "rate_limited") scanError("Trop de demandes pour le moment — réessaie dans un instant.");
-      else if(code === "invalid_json") scanError("L'analyse n'a pas produit de résultat exploitable — réessaie avec une photo plus nette.");
-      else scanError("Une erreur est survenue pendant l'analyse — réessaie.");
+      scanError("Erreur réseau — réessaie.");
+      return;
+    }
+
+    if(data && typeof data.credits === "number" && !state.premium){
+      state.credits = data.credits; saveState(); renderStatus();
+    }
+    if(res.status === 402){
+      scanError((data && data.error) || "Ton scan gratuit est déjà utilisé.");
+      openPaywall("scan", "Ton scan gratuit est déjà utilisé. Prends des crédits ou l'abonnement pour scanner d'autres cours.");
+      return;
+    }
+    if(!res.ok || !data){
+      scanError((data && data.error) || "L'analyse a échoué — réessaie.");
       return;
     }
 
     steps[1].classList.remove("active"); steps[1].classList.add("done");
     steps[2].classList.add("active");
 
-    var themeKey = result && result.themeKey;
-    var subcatKey = result && result.subcatKey;
-    var extractedText = (result && result.extractedText) || null;
-    var t = themeKey ? THEMES[themeKey] : null;
-    var sc = (t && subcatKey) ? t.subcats.filter(function(s){ return s.key === subcatKey; })[0] : null;
-
+    var t = data.themeKey ? THEMES[data.themeKey] : null;
+    var sc = (t && data.subcatKey) ? t.subcats.filter(function(s){ return s.key === data.subcatKey; })[0] : null;
     if(!t || !sc){
-      scanError("Impossible de déterminer un thème à partir de cette photo. Réessaie avec une photo plus nette d'un cours de mécanique automobile (freinage, moteur, transmission, électricité, suspension ou climatisation).");
+      scanError("Impossible de déterminer un thème à partir de cette photo (aucun crédit utilisé). Réessaie avec une photo plus nette d'un cours de mécanique automobile.");
       return;
     }
 
     steps[2].classList.remove("active"); steps[2].classList.add("done");
-    steps[3].classList.add("active"); steps[3].classList.remove("active"); steps[3].classList.add("done");
+    steps[3].classList.add("done");
 
-    scanTheme = themeKey;
+    scanTheme = data.themeKey;
     scanSubcat = sc;
-    scanExtractedText = extractedText;
+    scanExtractedText = data.extractedText || null;
+    scanBilling = data.billing;
     analyzeBtn.disabled = false;
     analyzeBtn.textContent = "Analyser une autre photo";
-
-    if(!state.premium && !state.scanGateShown){
-      state.scanGateShown = true; saveState();
-      requireAccountOrSkip(showScanResult, "Voir mon résultat");
-    } else {
-      showScanResult();
-    }
-  });
+    showScanResult();
+  }
 
   function showScanResult(){
     var t = THEMES[scanTheme];
     var sc = scanSubcat;
     var picked = pickRandom(sc.questions, 5);
-    var canUse = state.premium || state.credits > 0 || !state.scanUsed;
     var textLine = scanExtractedText ? ('« ' + escapeAttr(scanExtractedText) + ' »') : "Aucun texte exploitable détecté sur cette photo — thème identifié à partir des éléments visuels.";
-    var html = '<div class="detected-text">' + textLine + '</div>' +
+    var billingNote =
+      scanBilling === "free" ? "Scan gratuit utilisé — les suivants se font avec un crédit ou l'abonnement." :
+      scanBilling === "credit" ? "1 crédit utilisé pour ce scan." : "";
+    scanPanel.innerHTML = '<div class="detected-text">' + textLine + '</div>' +
       '<div class="eyebrow" style="margin-bottom:8px;">Thème détecté</div>' +
       '<h3 style="font-size:1.5rem;margin-bottom:6px;">' + t.title + ' — ' + sc.title + '</h3>' +
-      '<p style="color:var(--c-dim);font-size:.9rem;margin-bottom:18px;">' + picked.length + ' questions correspondant au sujet détecté sur ta photo.</p>';
-
-    if(canUse){
-      html += '<button class="btn btn-primary btn-block" id="scanStartBtn">Lancer le quiz généré</button>';
-      if(!state.premium && state.credits === 0 && !state.scanUsed){
-        html += '<div class="price-note" style="margin-top:10px;">Premier scan offert — les suivants nécessitent l\'abonnement ou un crédit.</div>';
-      }
-    } else {
-      html += '<div class="price-note" style="margin-bottom:10px;">Scan gratuit déjà utilisé.</div>' +
-        '<button class="btn btn-outline btn-block" id="scanUnlockBtn">Débloquer ce quiz — 0,99&nbsp;€ / abonnement</button>';
-    }
-    scanPanel.innerHTML = html;
-
-    var startBtn = document.getElementById("scanStartBtn");
-    if(startBtn){
-      startBtn.addEventListener("click", async function(){
-        if(!state.premium){
-          /* spend a real credit only when this isn't the free first scan —
-             the free allotment itself is a local-only flag, no server
-             call needed, nothing of monetary value to enforce there */
-          if(state.credits > 0){
-            var ok = await spendCredit();
-            if(!ok){ toast("Impossible de débiter le crédit — réessaie."); return; }
-          }
-          state.scanUsed = true;
-          saveState(); renderStatus();
-        }
-        startQuiz("scan-" + scanTheme + "-" + sc.key, picked, t.title, "Scan photo · " + sc.title);
-      });
-    }
-    var unlockBtn = document.getElementById("scanUnlockBtn");
-    if(unlockBtn){
-      unlockBtn.addEventListener("click", function(){
-        openPaywall("scan", "Débloque ce quiz généré à partir de ta photo, avec sa fiche PDF.");
-      });
-    }
+      '<p style="color:var(--c-dim);font-size:.9rem;margin-bottom:18px;">' + picked.length + ' questions correspondant au sujet détecté sur ta photo.</p>' +
+      '<button class="btn btn-primary btn-block" id="scanStartBtn">Lancer le quiz généré</button>' +
+      (billingNote ? '<div class="price-note" style="margin-top:10px;">' + billingNote + '</div>' : '');
+    document.getElementById("scanStartBtn").addEventListener("click", function(){
+      startQuiz("scan-" + scanTheme + "-" + sc.key, picked, t.title, "Scan photo · " + sc.title);
+    });
   }
-
-  window.revealScanQuiz = function(){
-    if(scanTheme) showScanResult();
-  };
-  function revealScanQuiz(){ window.revealScanQuiz(); }
 
   /* ---------------- scroll animations (Motion) ----------------
      "Framer Motion" itself ships no browser-global build any more (React-only,
@@ -4120,22 +4147,10 @@
     });
   }
 
-  /* ---------------- AI mechanic chat (sample capability) ----------------
-     Honesty note (see also the visible chat-note in the panel): the `sample`
-     capability has no live web browsing and no memory between calls — the
-     platform's own contract says so explicitly. So this assistant is briefed
-     to answer from general automotive knowledge, never claim it just looked
-     something up online, and point to manufacturer documentation / a
-     professional for anything needing an exact, model-specific figure. It
-     still enforces the on-topic redirect and the safety disclaimer, which
-     are achievable. */
-  var CHAT_INSTRUCTIONS = [
-    "Tu es l'Assistant Mécanique de MecaPrep, expert en mécanique automobile toutes marques confondues (généraliste et spécificités constructeur). Réponds toujours en français, avec le ton concret d'un mécano expérimenté qui explique à un collègue ou un élève. Sois concis : quelques phrases ou une courte liste, jamais de longs pavés.",
-    "Règle 1 — sujet : si la question ne concerne pas la mécanique, l'entretien, le diagnostic ou la réglementation automobile, décline poliment en une phrase et recentre la conversation sur la mécanique auto, sans répondre sur l'autre sujet.",
-    "Règle 2 — honnêteté sur tes sources : tu n'as pas d'accès à une recherche web en direct dans cet outil et aucune mémoire entre les sessions. Base tes réponses sur tes connaissances générales et documentées du secteur automobile. Ne prétends jamais avoir consulté une source en ligne précise à l'instant. Si la question demande une donnée exacte propre à un modèle précis (couple de serrage, référence pièce, procédure constructeur spécifique, rappel en cours), dis-le clairement et recommande de vérifier dans la documentation technique officielle du constructeur ou auprès d'un professionnel équipé.",
-    "Règle 3 — sécurité : si la question touche au freinage, à la direction, à la structure ou carrosserie porteuse, aux airbags, ceintures ou tout système de retenue, termine TOUJOURS ta réponse par une ligne d'avertissement claire recommandant une vérification par un professionnel qualifié avant toute intervention réelle."
-  ].join("\n\n");
-
+  /* ---------------- AI mechanic chat ----------------
+     Answers come from the ai-chat Edge Function (Claude), which holds the
+     assistant's instructions server-side and enforces a per-account daily
+     cap — see supabase/functions/ai-chat. Signed-in visitors only. */
   var chatFab = document.getElementById("chatFab");
   var chatPanel = document.getElementById("chatPanel");
   var chatClose = document.getElementById("chatClose");
@@ -4146,14 +4161,6 @@
   var chatTurns = [];
   var chatBusy = false;
   var chatOpenedOnce = false;
-  var sampleAPI = null;
-
-  (async function(){
-    if(window.claude && typeof window.claude.use === "function"){
-      try { sampleAPI = await window.claude.use("sample"); } catch(e){ sampleAPI = null; }
-    }
-    if(!sampleAPI){ chatFab.style.display = "none"; closeChat(); }
-  })();
 
   function addChatMsg(who, text, thinking){
     var el = document.createElement("div");
@@ -4193,19 +4200,18 @@
     }
   });
 
-  chatForm.addEventListener("submit", async function(ev){
+  chatForm.addEventListener("submit", function(ev){
     ev.preventDefault();
-    if(chatBusy) return;
-    var text = chatInput.value.trim();
-    if(!text) return;
+    if(chatBusy || !chatInput.value.trim()) return;
+    requireAccount(sendChatMessage);
+  });
 
-    if(!sampleAPI && window.claude && typeof window.claude.use === "function"){
-      sampleAPI = await window.claude.use("sample").catch(function(){ return null; });
-    }
-    if(!sampleAPI){
-      addChatMsg("bot", "Le chat IA n'est pas disponible dans cet aperçu — ouvre l'artefact publié pour l'utiliser.");
-      return;
-    }
+  async function sendChatMessage(){
+    var text = chatInput.value.trim();
+    if(chatBusy || !text) return;
+    var sessionRes = supa ? await supa.auth.getSession() : null;
+    var session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if(!session){ addChatMsg("bot", "Reconnecte-toi pour utiliser l'assistant."); return; }
 
     chatInput.value = "";
     chatInput.style.height = "auto";
@@ -4213,55 +4219,44 @@
     chatTurns.push({ role:"user", content:text });
     chatBusy = true;
     chatSend.disabled = true;
-    var thinkingEl = addChatMsg("bot", "Réflexion…", true);
-    var ctl = new AbortController();
+    var replyEl = addChatMsg("bot", "Réflexion…", true);
 
     try {
-      var res = await sampleAPI(
-        [{ role:"user", content: CHAT_INSTRUCTIONS }].concat(chatTurns),
-        {
-          cache: false,
-          modelTier: "default",
-          signal: ctl.signal,
-          onText: function(u){
-            thinkingEl.classList.remove("thinking");
-            thinkingEl.textContent = u.text;
-            chatBody.scrollTop = chatBody.scrollHeight;
-          }
-        }
-      );
-      thinkingEl.classList.remove("thinking");
-      thinkingEl.textContent = res.text;
-      chatTurns.push({ role:"assistant", content: res.text });
+      var res = await fetch(SUPABASE_URL + "/functions/v1/ai-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + session.access_token,
+          "apikey": SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ messages: chatTurns })
+      });
+      var data = await res.json().catch(function(){ return null; });
+      replyEl.classList.remove("thinking");
+      if(!res.ok || !data || !data.text){
+        replyEl.textContent = (data && data.error) || "Désolé, une erreur est survenue. Réessaie dans un instant.";
+        chatTurns.pop(); // don't resend a question that got no answer
+        return;
+      }
+      replyEl.textContent = data.text;
+      chatTurns.push({ role:"assistant", content:data.text });
       if(chatTurns.length > 16) chatTurns = chatTurns.slice(-16);
-      if(res.truncated){
+      if(data.truncated){
         var note = document.createElement("div");
         note.className = "chat-safety";
         note.textContent = "Réponse coupée (trop longue) — pose une question plus précise si besoin.";
-        thinkingEl.appendChild(note);
+        replyEl.appendChild(note);
       }
     } catch(e){
-      var code = e && e.code;
-      thinkingEl.classList.remove("thinking");
-      if(code === "not_granted"){
-        thinkingEl.textContent = "Tu as refusé l'accès à l'IA pour cette page. Recharge la page si tu changes d'avis.";
-        chatFab.style.display = "none";
-      } else if(code === "rate_limited"){
-        thinkingEl.textContent = "Trop de demandes pour le moment — réessaie dans un instant.";
-      } else if(code === "cancelled"){
-        thinkingEl.remove();
-      } else if(code === "refused"){
-        thinkingEl.textContent = "Je ne peux pas répondre à cette demande. Reformule ta question sur un sujet mécanique.";
-      } else if(e && e.text){
-        thinkingEl.textContent = e.text + "\n\n(réponse interrompue — réessaie)";
-      } else {
-        thinkingEl.textContent = "Désolé, une erreur est survenue. Réessaie dans un instant.";
-      }
+      replyEl.classList.remove("thinking");
+      replyEl.textContent = "Erreur réseau — réessaie.";
+      chatTurns.pop();
     } finally {
       chatBusy = false;
       chatSend.disabled = false;
+      chatBody.scrollTop = chatBody.scrollHeight;
     }
-  });
+  }
 
   /* ---------------- router ----------------
      Static single-file Artifact, no server: pages are simulated with a

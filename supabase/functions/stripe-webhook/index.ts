@@ -67,7 +67,10 @@ Deno.serve(async (req) => {
         if (session.mode === "subscription") {
           await supabaseService.rpc("set_premium", { p_user_id: userId, p_premium: true });
         } else if (session.mode === "payment") {
-          await supabaseService.rpc("grant_credit", { p_user_id: userId, p_amount: 1 });
+          // Set server-side by create-checkout-session (1, 5 or 10), never by the browser.
+          const credits = Number.parseInt(session.metadata?.credits ?? "1", 10);
+          const amount = Number.isFinite(credits) && credits >= 1 && credits <= 10 ? credits : 1;
+          await supabaseService.rpc("grant_credit", { p_user_id: userId, p_amount: amount });
         }
         if (typeof session.customer === "string") {
           await supabaseService.rpc("set_stripe_customer", {

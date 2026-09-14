@@ -7,7 +7,9 @@
 // Required secrets (Supabase Dashboard → Edge Functions → Secrets):
 //   STRIPE_SECRET_KEY          sk_test_... (or sk_live_... once you go live)
 //   STRIPE_PRICE_SUBSCRIPTION  price_... — the 4,99€/mois recurring Price
-//   STRIPE_PRICE_CREDIT        price_... — the 0,99€ one-off Price
+//   STRIPE_PRICE_CREDIT        price_... — the 0,99€ one-off Price (1 credit)
+//   STRIPE_PRICE_CREDIT_5      price_... — the 3,99€ one-off Price (5 credits)
+//   STRIPE_PRICE_CREDIT_10     price_... — the 6,99€ one-off Price (10 credits)
 //   SITE_URL                   e.g. https://mecaprep.github.io/mecaprep
 //                              (where Stripe sends the visitor back to)
 // SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY are
@@ -51,12 +53,16 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const plan = body?.plan;
-    if (plan !== "subscription" && plan !== "credit") {
-      return json({ error: "plan must be \"subscription\" or \"credit\"" }, 400);
-    }
-    const priceId = plan === "subscription"
-      ? Deno.env.get("STRIPE_PRICE_SUBSCRIPTION")
-      : Deno.env.get("STRIPE_PRICE_CREDIT");
+    // credits = how many the webhook grants once Stripe confirms payment
+    const PLANS: Record<string, { priceEnv: string; credits: number }> = {
+      subscription: { priceEnv: "STRIPE_PRICE_SUBSCRIPTION", credits: 0 },
+      credit: { priceEnv: "STRIPE_PRICE_CREDIT", credits: 1 },
+      credit5: { priceEnv: "STRIPE_PRICE_CREDIT_5", credits: 5 },
+      credit10: { priceEnv: "STRIPE_PRICE_CREDIT_10", credits: 10 },
+    };
+    const planDef = typeof plan === "string" ? PLANS[plan] : undefined;
+    if (!planDef) return json({ error: "Unknown plan" }, 400);
+    const priceId = Deno.env.get(planDef.priceEnv);
     if (!priceId) return json({ error: "Price not configured for this plan" }, 500);
 
     // service_role client: reads/writes entitlements, bypassing RLS —
@@ -87,10 +93,12 @@ Deno.serve(async (req) => {
       mode: plan === "subscription" ? "subscription" : "payment",
       customer: customerId,
       client_reference_id: user.id,
-      metadata: { supabase_user_id: user.id },
+      metadata: { supabase_user_id: user.id, credits: String(planDef.credits) },
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${siteUrl}/#/tarifs?checkout=success`,
-      cancel_url: `${siteUrl}/#/tarifs?checkout=cancelled`,
+      // Query before the hash: the app reads ?checkout= from location.search,
+      // and its hash router only recognises an exact "#/tarifs".
+      success_url: `${siteUrl}/?checkout=success#/tarifs`,
+      cancel_url: `${siteUrl}/?checkout=cancelled#/tarifs`,
     });
 
     return json({ url: session.url });
