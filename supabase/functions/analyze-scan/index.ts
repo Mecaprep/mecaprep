@@ -6,7 +6,7 @@
 // browser — decides whether the scan is allowed and how it is paid for,
 // so the free-scan limit can't be reset by clearing browser storage:
 //
-//   subscriber, < 50 this month → included
+//   subscriber, < 35 this month → included
 //   first scan of the account   → free (exactly one per account, ever)
 //   otherwise, a credit left    → one credit is spent
 //   otherwise                   → 402 (paywall, or "monthly limit" message)
@@ -24,7 +24,7 @@ import Anthropic from "npm:@anthropic-ai/sdk@0.125.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const FREE_SCANS_PER_ACCOUNT = 1;
-const PREMIUM_SCANS_PER_MONTH = 50; // keep in sync with the Tarifs/paywall copy in index.html
+const PREMIUM_SCANS_PER_MONTH = 35; // keep in sync with the Tarifs/paywall copy in index.html
 const SCAN_DAILY_CAP = 20;
 const MAX_IMAGE_BASE64_CHARS = 6_500_000; // ≈ 4.9 MB decoded, under the API's 5 MB per-image limit
 const MAX_TARGETS_CHARS = 12_000;
