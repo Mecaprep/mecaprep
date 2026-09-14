@@ -203,8 +203,6 @@
   .status-dot{width:8px;height:8px;border-radius:50%;background:var(--c-line-strong);}
   .status-pill.is-premium{background:var(--signal);color:var(--ink);}
   .status-pill.is-premium .status-dot{background:var(--ink);}
-  .reset-link{font-family:var(--f-mono);font-size:.64rem;color:var(--c-dimmer);background:none;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:0;}
-  .reset-link:hover{color:var(--c-bad);}   /* wipes demo state: destructive → danger colour */
   .hamburger{display:none !important;}     /* kept for the script; the tab bar replaces it */
 
   @media (max-width:1240px){ .navlinks a{padding:0 11px;} .navlinks a i{display:none;} }
@@ -555,7 +553,6 @@
   .foot-tag{font-family:var(--f-mono);font-size:.74rem;color:var(--c-dim);letter-spacing:.04em;max-width:30ch;}
   .foot-grid{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-top:22px;}
   .foot-links{display:flex;gap:22px;font-family:var(--f-mono);font-size:.74rem;color:var(--c-dim);flex-wrap:wrap;}
-  footer .reset-link{font-size:.72rem;color:var(--c-dimmer);}
   .foot-note{font-size:.74rem;color:var(--c-dimmer);margin-top:14px;max-width:100ch;line-height:1.55;}
 
   /* ---------- modals ---------- */
@@ -1149,7 +1146,6 @@
     </div>
     <div class="foot-grid">
       <div class="foot-links"><span>CGU</span><span>Confidentialité</span><span>Contact</span></div>
-      <button class="reset-link" id="resetDemo">Réinitialiser la démo</button>
     </div>
     <div class="foot-note">Paiements traités par Stripe · comptes gérés par Supabase — MecaPrep ne stocke jamais tes identifiants de paiement.</div>
     <div class="foot-note">Fiabilité du contenu : les questions marquées « source officielle » s'appuient sur des documents publics Éduscol/BNSEEP (référentiels, sujets et corrigés d'examen). Les fiches Pannes &amp; Diagnostic marquées « source vérifiée » s'appuient sur des ressources techniques automobiles en ligne (garages, réseaux de pièces détachées). Les autres questions, marquées « vérifié par un mécano », reposent sur les connaissances du métier et ont été relues par un mécanicien professionnel.</div>
@@ -3494,13 +3490,6 @@
     requireAccount(function(){ startCheckout("subscription", null); });
   });
 
-  document.getElementById("resetDemo").addEventListener("click", async function(){
-    localStorage.removeItem(STORE_KEY);
-    /* also drop the real Supabase session — otherwise getSession() would
-       silently restore hasAccount=true right after the reload below. */
-    if(supa){ try{ await supa.auth.signOut(); }catch(e){} }
-    location.reload();
-  });
 
   /* ---------------- account panel ---------------- */
   var accountScrim = document.getElementById("accountScrim");
