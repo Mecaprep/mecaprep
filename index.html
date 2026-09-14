@@ -260,6 +260,7 @@
   .plate-art .hero-art-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
   .hero-spin{transform-box:view-box;transform-origin:380px 290px;animation:rotor 60s linear infinite;}
   @keyframes rotor{to{transform:rotate(360deg);}}
+  .spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--c-line);border-top-color:var(--signal);animation:rotor .8s linear infinite;margin:6px auto 18px;}
   .hero-leader path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw .8s ease forwards;animation-delay:calc(.5s + var(--i) * .14s);}
   .hero-leader circle,.hero-leader text{opacity:0;animation:fadein .4s ease forwards;animation-delay:calc(.9s + var(--i) * .14s);}
   @keyframes draw{to{stroke-dashoffset:0;}}
@@ -1214,28 +1215,37 @@
       <button class="modal-close" id="signupClose" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--c-dim);margin-top:0;" id="signupIntro">Un compte est nécessaire avant de passer à l'abonnement ou à l'achat.</p>
-      <ul class="signup-benefits">
-        <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Des quiz basés sur de vrais sujets d'examen, pas des questions génériques</li>
-        <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Ta progression sauvegardée sur cet appareil</li>
-        <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Accès immédiat aux thèmes et au scanner une fois débloqués</li>
-        <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Fiches PDF et historique de résultats retrouvables</li>
-      </ul>
-      <form id="signupForm" novalidate>
-        <div class="field">
-          <label for="signupEmail">Adresse email</label>
-          <input type="email" id="signupEmail" name="email" autocomplete="email" required>
-        </div>
-        <div class="field">
-          <label for="signupPassword">Mot de passe</label>
-          <input type="password" id="signupPassword" name="password" autocomplete="new-password" minlength="6" required>
-        </div>
-        <div class="field-error" id="signupError"></div>
-        <button type="submit" class="btn btn-primary btn-block">Créer mon compte et continuer</button>
-      </form>
-      <div class="price-note" style="margin-top:12px;">Gratuit, sans engagement — aucun paiement n'est demandé à cette étape.</div>
-      <button type="button" class="btn btn-ghost btn-block" id="signupSkip" style="margin-top:10px;display:none;">Voir mon résultat</button>
-      <div class="price-note" style="margin-top:16px;">Compte géré par Supabase (authentification), paiement traité par Stripe — ton mot de passe et ton numéro de carte ne transitent jamais par MecaPrep.</div>
+      <div id="signupFormWrap">
+        <p style="color:var(--c-dim);margin-top:0;" id="signupIntro">Un compte est nécessaire avant de passer à l'abonnement ou à l'achat.</p>
+        <ul class="signup-benefits">
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Des quiz basés sur de vrais sujets d'examen, pas des questions génériques</li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Ta progression sauvegardée sur cet appareil</li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Accès immédiat aux thèmes et au scanner une fois débloqués</li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--c-ok)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Fiches PDF et historique de résultats retrouvables</li>
+        </ul>
+        <form id="signupForm" novalidate>
+          <div class="field">
+            <label for="signupEmail">Adresse email</label>
+            <input type="email" id="signupEmail" name="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="signupPassword">Mot de passe</label>
+            <input type="password" id="signupPassword" name="password" autocomplete="new-password" minlength="6" required>
+          </div>
+          <div class="field-error" id="signupError"></div>
+          <button type="submit" class="btn btn-primary btn-block">Créer mon compte et continuer</button>
+        </form>
+        <div class="price-note" style="margin-top:12px;">Gratuit, sans engagement — aucun paiement n'est demandé à cette étape.</div>
+        <button type="button" class="btn btn-ghost btn-block" id="signupSkip" style="margin-top:10px;display:none;">Voir mon résultat</button>
+        <div class="price-note" style="margin-top:16px;">Compte géré par Supabase (authentification), paiement traité par Stripe — ton mot de passe et ton numéro de carte ne transitent jamais par MecaPrep.</div>
+      </div>
+      <div id="signupWaiting" style="display:none;text-align:center;padding:8px 0 4px;">
+        <div class="spinner"></div>
+        <p style="margin:0 0 6px;font-weight:700;">Vérifie tes emails</p>
+        <p style="color:var(--c-dim);margin:0 0 18px;" id="signupWaitingEmail">Un email de confirmation vient d'être envoyé.</p>
+        <p style="color:var(--c-dim);font-size:.85rem;margin:0;">Cette fenêtre continue automatiquement dès que tu as confirmé — pas besoin de revenir ici.</p>
+        <button type="button" class="btn btn-ghost btn-block" id="signupWaitingCancel" style="margin-top:18px;">Annuler</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2134,6 +2144,19 @@
       saveState();
       subscribeEntitlements(session ? session.user.id : null);
       if(session) syncEntitlements(session.user.id);
+      /* Resumes the signup modal's "check your email" waiting screen —
+         see showSignupWaiting — the moment a session actually appears,
+         including one that just landed via cross-tab sync after the
+         visitor confirmed their email in a different tab. */
+      if(awaitingEmailConfirmation && session){
+        awaitingEmailConfirmation = false;
+        signupScrim.classList.remove("open");
+        toast("Compte confirmé — connecté.");
+        var cb = signupCallback;
+        signupCallback = null;
+        signupSkipCallback = null;
+        if(cb) cb();
+      }
     });
   }
   /* Starts a real Stripe Checkout for the signed-in visitor. `contextKey`
@@ -3288,8 +3311,28 @@
   var signupScrim = document.getElementById("signupScrim");
   var signupIntro = document.getElementById("signupIntro");
   var signupSkipBtn = document.getElementById("signupSkip");
+  var signupFormWrap = document.getElementById("signupFormWrap");
+  var signupWaiting = document.getElementById("signupWaiting");
   var signupCallback = null;
   var signupSkipCallback = null;
+  /* Set while the modal is showing the "check your email" spinner, after
+     signUp() succeeded but returned no session yet (email confirmation
+     required). The global onAuthStateChange listener below watches for
+     this flag: Supabase's JS client syncs a new session across same-origin
+     tabs via localStorage, so confirming in a second tab (opened from the
+     Mail app) resumes this one automatically, with no manual reconnect. */
+  var awaitingEmailConfirmation = false;
+  function showSignupWaiting(email){
+    awaitingEmailConfirmation = true;
+    signupFormWrap.style.display = "none";
+    signupWaiting.style.display = "";
+    document.getElementById("signupWaitingEmail").textContent = email ? "Un email de confirmation a été envoyé à " + email + "." : "Un email de confirmation vient d'être envoyé.";
+  }
+  function hideSignupWaiting(){
+    awaitingEmailConfirmation = false;
+    signupWaiting.style.display = "none";
+    signupFormWrap.style.display = "";
+  }
   function requireAccount(onReady){
     if(state.hasAccount){ onReady(); return; }
     signupCallback = onReady;
@@ -3297,6 +3340,7 @@
     signupSkipBtn.style.display = "none";
     signupIntro.textContent = "Un compte est nécessaire avant de passer à l'abonnement ou à l'achat.";
     document.getElementById("signupError").textContent = "";
+    hideSignupWaiting();
     signupScrim.classList.add("open");
   }
   function requireAccountOrSkip(onReady, skipLabel){
@@ -3307,16 +3351,19 @@
     signupSkipBtn.textContent = skipLabel || "Voir mon résultat";
     signupIntro.textContent = "Crée un compte pour garder ta progression et débloquer plus tard tous les thèmes.";
     document.getElementById("signupError").textContent = "";
+    hideSignupWaiting();
     signupScrim.classList.add("open");
   }
   function closeSignupGate(){
     signupScrim.classList.remove("open");
+    hideSignupWaiting();
     var cb = signupSkipCallback;
     signupCallback = null;
     signupSkipCallback = null;
     if(cb) cb();
   }
   document.getElementById("signupClose").addEventListener("click", closeSignupGate);
+  document.getElementById("signupWaitingCancel").addEventListener("click", closeSignupGate);
   signupSkipBtn.addEventListener("click", closeSignupGate);
   signupScrim.addEventListener("click", function(ev){ if(ev.target === signupScrim) closeSignupGate(); });
   /* Real Supabase Auth. The form has a single pair of fields (no separate
@@ -3365,7 +3412,10 @@
       return;
     }
 
-    var signUp = await supa.auth.signUp({ email: email, password: password });
+    var signUp = await supa.auth.signUp({
+      email: email, password: password,
+      options: { emailRedirectTo: location.origin + location.pathname }
+    });
     submitBtn.disabled = false; submitBtn.textContent = originalLabel;
     if(signUp.error){
       var msg = signUp.error.message || "";
@@ -3387,11 +3437,12 @@
       return;
     }
     /* Signed up but no session yet: this Supabase project requires email
-       confirmation before first sign-in. Nothing to gate on yet, so the
-       modal stays open rather than pretending the visitor is authenticated. */
+       confirmation before first sign-in. Switches to the waiting screen —
+       the global onAuthStateChange listener below auto-resumes once the
+       visitor confirms (even in a different tab), no reconnect needed. */
     passwordInput.value = "";
-    errorEl.style.color = "var(--c-ok)";
-    errorEl.textContent = "Compte créé — confirme ton adresse via l'email que tu viens de recevoir, puis reconnecte-toi ici.";
+    errorEl.textContent = "";
+    showSignupWaiting(email);
   });
 
   /* All four buttons below now start a REAL Stripe Checkout instead of
