@@ -638,10 +638,11 @@
   .results-score .of{font-size:1.2rem;color:var(--c-dim);}
   .results-score .score-line{font-family:var(--f-display);font-weight:800;font-stretch:112%;font-size:1.35rem;line-height:1.2;}
   .results-list{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
-  .result-row{border:2px solid var(--c-line);border-radius:10px;padding:12px 14px;font-size:.88rem;display:flex;gap:10px;background:var(--c-card);}
+  .result-row{border:2px solid var(--c-line);border-radius:10px;padding:12px 14px;font-size:.88rem;display:flex;align-items:center;gap:10px;background:var(--c-card);}
+  #accountHistoryList{display:flex;flex-direction:column;gap:10px;}
   .result-row.ok{border-left:6px solid var(--c-ok);}
   .result-row.bad{border-left:6px solid var(--c-bad);}
-  .result-row .rtext{color:var(--c-dim);}
+  .result-row .rtext{color:var(--c-dim);flex:1;}
   .result-row .rtext b{color:var(--c-fg);display:block;margin-bottom:3px;font-weight:700;}
   .results-actions{display:flex;gap:12px;flex-wrap:wrap;}
 
@@ -824,7 +825,7 @@
     </nav>
     <div class="nav-right">
       <a href="#/quiz" class="btn btn-primary nav-cta">Commencer</a>
-      <span class="status-pill" id="statusPill"><span class="status-dot"></span><span id="statusLabel">Gratuit</span></span>
+      <span class="status-pill" id="statusPill" role="button" tabindex="0" title="Mon compte" style="cursor:pointer;"><span class="status-dot"></span><span id="statusLabel">Gratuit</span></span>
       <button class="hamburger" id="hamburgerBtn" aria-label="Ouvrir le menu" aria-expanded="false" tabindex="-1"><span></span></button>
     </div>
   </div>
@@ -1235,6 +1236,25 @@
       <div class="price-note" style="margin-top:12px;">Gratuit, sans engagement — aucun paiement n'est demandé à cette étape.</div>
       <button type="button" class="btn btn-ghost btn-block" id="signupSkip" style="margin-top:10px;display:none;">Voir mon résultat</button>
       <div class="price-note" style="margin-top:16px;">Compte géré par Supabase (authentification), paiement traité par Stripe — ton mot de passe et ton numéro de carte ne transitent jamais par MecaPrep.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Account panel: plan status, subscription management, quiz history -->
+<div class="scrim" id="accountScrim">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3>Mon compte</h3>
+      <button class="modal-close" id="accountClose" aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--c-dim);margin-top:0;" id="accountEmailLine"></p>
+      <p style="color:var(--c-dim);margin-top:-8px;" id="accountPlanLine"></p>
+      <button type="button" class="btn btn-outline btn-block" id="accountManageBtn" style="margin-top:6px;">Gérer mon abonnement</button>
+      <button type="button" class="btn btn-ghost btn-block" id="accountSignOutBtn" style="margin-top:10px;">Se déconnecter</button>
+      <h4 style="margin:22px 0 8px;">Mes quiz faits</h4>
+      <div id="accountHistoryEmpty" style="color:var(--c-dim);display:none;">Aucun quiz terminé pour le moment.</div>
+      <div id="accountHistoryList"></div>
     </div>
   </div>
 </div>
@@ -3401,6 +3421,110 @@
     location.reload();
   });
 
+  /* ---------------- account panel ---------------- */
+  var accountScrim = document.getElementById("accountScrim");
+  function closeAccountPanel(){ accountScrim.classList.remove("open"); }
+  document.getElementById("accountClose").addEventListener("click", closeAccountPanel);
+  accountScrim.addEventListener("click", function(ev){ if(ev.target === accountScrim) closeAccountPanel(); });
+
+  async function openAccountPanel(){
+    var sessionRes = supa ? await supa.auth.getSession() : null;
+    var session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if(!session){ toast("Reconnecte-toi pour voir ton compte."); return; }
+
+    document.getElementById("accountEmailLine").textContent = session.user.email || state.accountEmail || "";
+    document.getElementById("accountPlanLine").textContent =
+      state.premium ? "Abonnement Premium actif." :
+      state.credits > 0 ? state.credits + " crédit(s) disponible(s)." :
+      "Compte gratuit.";
+    accountScrim.classList.add("open");
+    loadAccountHistory(session.user.id);
+  }
+  document.getElementById("statusPill").addEventListener("click", function(){
+    requireAccount(openAccountPanel);
+  });
+  document.getElementById("statusPill").addEventListener("keydown", function(ev){
+    if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); requireAccount(openAccountPanel); }
+  });
+
+  document.getElementById("accountManageBtn").addEventListener("click", async function(){
+    var btn = this;
+    if(!supa) return;
+    var sessionRes = await supa.auth.getSession();
+    var session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if(!session) return;
+    btn.disabled = true;
+    var originalText = btn.textContent;
+    btn.textContent = "Redirection…";
+    try{
+      var res = await fetch(SUPABASE_URL + "/functions/v1/create-portal-session", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + session.access_token, "apikey": SUPABASE_ANON_KEY }
+      });
+      var data = await res.json().catch(function(){ return null; });
+      if(res.ok && data && data.url){ window.location.href = data.url; return; }
+      toast((data && data.error) || "Impossible d'ouvrir la gestion de l'abonnement.");
+    }catch(e){
+      toast("Erreur réseau — réessaie.");
+    }
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+
+  document.getElementById("accountSignOutBtn").addEventListener("click", async function(){
+    closeAccountPanel();
+    if(supa){ try{ await supa.auth.signOut(); }catch(e){} }
+    state.hasAccount = false;
+    state.accountEmail = null;
+    state.premium = false;
+    state.credits = 0;
+    saveState();
+    renderStatus(); renderGarage(); renderDiagGrid();
+    toast("Déconnecté.");
+  });
+
+  /* Regenerates each fiche PDF on demand from the stored answers, rather
+     than keeping generated PDF files anywhere — cheaper and always in
+     sync with the current fiche layout. */
+  function renderAccountHistory(rows){
+    var list = document.getElementById("accountHistoryList");
+    var empty = document.getElementById("accountHistoryEmpty");
+    list.innerHTML = "";
+    empty.style.display = rows.length ? "none" : "block";
+    rows.forEach(function(row){
+      var dateStr = new Date(row.created_at).toLocaleDateString("fr-FR");
+      var item = document.createElement("div");
+      item.className = "result-row " + (row.score === row.total ? "ok" : "");
+      item.innerHTML = '<div class="rtext"><b>' + row.title + '</b>' +
+        'Score : ' + row.score + ' / ' + row.total + '   ·   ' + dateStr + '</div>';
+      var dlBtn = document.createElement("button");
+      dlBtn.type = "button";
+      dlBtn.className = "btn btn-ghost";
+      dlBtn.textContent = "Fiche PDF";
+      dlBtn.addEventListener("click", function(){
+        downloadFichePdf({ key:row.theme_key, title:row.title, answers:row.answers }, dlBtn);
+      });
+      item.appendChild(dlBtn);
+      list.appendChild(item);
+    });
+  }
+  async function loadAccountHistory(userId){
+    var list = document.getElementById("accountHistoryList");
+    list.innerHTML = '<div style="color:var(--c-dim);">Chargement…</div>';
+    try{
+      var res = await supa.from("quiz_attempts")
+        .select("theme_key, title, score, total, answers, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending:false })
+        .limit(50);
+      renderAccountHistory((res && res.data) || []);
+    }catch(e){
+      list.innerHTML = '';
+      document.getElementById("accountHistoryEmpty").style.display = "block";
+      document.getElementById("accountHistoryEmpty").textContent = "Impossible de charger l'historique pour le moment.";
+    }
+  }
+
   /* ---------------- mobile nav ---------------- */
   var hamburgerBtn = document.getElementById("hamburgerBtn");
   var mobileNav = document.getElementById("mobileNav");
@@ -3436,8 +3560,9 @@
   var current = null; // {title, questions, idx, answers:[], picked:null}
 
   function startQuiz(key, questions, title, sourceLabel){
-    current = { key:key, title:title, questions:questions, idx:0, answers:[], picked:null };
-    document.getElementById("quizTitle").textContent = "Quiz — " + title + (sourceLabel ? " · " + sourceLabel : "");
+    var fullTitle = title + (sourceLabel ? " · " + sourceLabel : "");
+    current = { key:key, title:fullTitle, questions:questions, idx:0, answers:[], picked:null };
+    document.getElementById("quizTitle").textContent = "Quiz — " + fullTitle;
     quizPlay.style.display = "";
     quizResults.style.display = "none";
     quizScrim.classList.add("open");
@@ -3539,21 +3664,42 @@
         '</div>';
       list.appendChild(row);
     });
+    saveQuizAttempt(current, score, total);
+  }
+
+  /* Records a finished attempt so the visitor can find it again later in
+     "Mon compte", without needing to redo the quiz. Best-effort: signed
+     out or offline, the quiz result the visitor is looking at right now
+     is unaffected either way. */
+  async function saveQuizAttempt(quiz, score, total){
+    if(!supa) return;
+    try{
+      var sessionRes = await supa.auth.getSession();
+      var session = sessionRes && sessionRes.data && sessionRes.data.session;
+      if(!session) return;
+      await supa.from("quiz_attempts").insert({
+        user_id: session.user.id,
+        theme_key: quiz.key,
+        title: quiz.title,
+        score: score,
+        total: total,
+        answers: quiz.answers
+      });
+    }catch(e){ /* history is a convenience, never block on it */ }
   }
 
   document.getElementById("closeResultsBtn").addEventListener("click", closeQuiz);
 
   /* ---------------- PDF fiche ---------------- */
-  document.getElementById("downloadFicheBtn").addEventListener("click", async function(){
-    if(!current) return;
-    var btn = this;
-    btn.disabled = true;
-    var originalText = btn.textContent;
-    btn.textContent = "Génération...";
+  /* Shared by the live post-quiz download button and the "Mon compte"
+     history list, which regenerates the same PDF from a stored attempt. */
+  async function downloadFichePdf(quiz, btn){
+    var originalText = btn ? btn.textContent : null;
+    if(btn){ btn.disabled = true; btn.textContent = "Génération..."; }
     try{
-      var blob = buildFichePdf(current);
+      var blob = buildFichePdf(quiz);
       var downloads = (window.claude && typeof window.claude.use === "function") ? await window.claude.use("downloads") : null;
-      var filename = "mecaprep-fiche-" + current.key + ".pdf";
+      var filename = "mecaprep-fiche-" + quiz.key + ".pdf";
       if(downloads){
         try{
           var res = await downloads.save({ filename: filename, data: blob });
@@ -3574,9 +3720,12 @@
         toast("Fiche PDF téléchargée.");
       }
     } finally {
-      btn.disabled = false;
-      btn.textContent = originalText;
+      if(btn){ btn.disabled = false; btn.textContent = originalText; }
     }
+  }
+  document.getElementById("downloadFicheBtn").addEventListener("click", function(){
+    if(!current) return;
+    downloadFichePdf(current, this);
   });
 
   function buildFichePdf(quiz){
