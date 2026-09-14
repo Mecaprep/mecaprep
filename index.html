@@ -3679,12 +3679,20 @@
       var expLines = doc.splitTextToSize(a.e, maxW);
       doc.text(expLines, margin, y); y += expLines.length * 12 + 6;
 
-      doc.setFontSize(8); doc.setFont("helvetica","normal");
-      doc.setTextColor(a.src && a.src.v ? 21 : 161, a.src && a.src.v ? 128 : 98, a.src && a.src.v ? 61 : 7);  // green-700 / amber-700
-      var srcLabel = (a.src && a.src.v ? "Source officielle vérifiée — " : "À valider par un professionnel — ") + (a.src ? a.src.detail : "");
-      var srcLines = doc.splitTextToSize(srcLabel, maxW);
-      doc.text(srcLines, margin, y); y += srcLines.length * 10 + 10;
-      doc.setFontSize(10);
+      /* Only print the source line for questions grounded in a real exam
+         paper — worth keeping on a revision sheet. The generic "unverified
+         general knowledge" disclaimer is useful as an in-app trust signal
+         but repeated on every single question it just clutters a printed
+         fiche meant for someone who already knows the trade. */
+      if(a.src && a.src.v){
+        doc.setFontSize(8); doc.setFont("helvetica","normal");
+        doc.setTextColor(21, 128, 61);  // green-700
+        var srcLines = doc.splitTextToSize("Source officielle vérifiée — " + a.src.detail, maxW);
+        doc.text(srcLines, margin, y); y += srcLines.length * 10 + 10;
+        doc.setFontSize(10);
+      } else {
+        y += 6;
+      }
     });
 
     return doc.output("blob");
