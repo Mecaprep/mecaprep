@@ -2092,6 +2092,7 @@
       saveState();
       renderStatus(); renderGarage(); renderDiagGrid();
       resolveStashedActionIfReady();
+      if(state.premium) fetchPremiumScansLeft(userId);
     }catch(e){ /* offline or transient — keep last known local values */ }
   }
   /* Deliberately does NOT auto-open whatever the visitor was about to
@@ -2256,20 +2257,39 @@
   /* The scan rules are enforced server-side (analyze-scan); this just
      states them right next to the button, where it matters. Keep "35"
      in sync with PREMIUM_SCANS_PER_MONTH in supabase/functions/analyze-scan.
-     premiumScansLeft is only known once a scan has come back this visit. */
+     premiumScansLeft used to be known only once a scan had come back
+     this visit — reloading the page (or a subscriber checking the
+     scanner before ever using it this session) always showed the
+     generic message. fetchPremiumScansLeft reads the visitor's own
+     ai_usage rows (readable since 005_ai_usage_select.sql) to show the
+     real count as soon as the page confirms they're a subscriber. */
+  var PREMIUM_SCANS_PER_MONTH = 35;
   var premiumScansLeft = null;
+  async function fetchPremiumScansLeft(userId){
+    if(!supa) return;
+    try{
+      var now = new Date();
+      var monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+      var res = await supa.from("ai_usage")
+        .select("id", { count:"exact", head:true })
+        .eq("user_id", userId).eq("kind", "scan").eq("billing", "premium").gte("created_at", monthStart);
+      var used = res && typeof res.count === "number" ? res.count : 0;
+      premiumScansLeft = Math.max(0, PREMIUM_SCANS_PER_MONTH - used);
+      renderScanQuota();
+    }catch(e){ /* keep the generic message rather than show a wrong count */ }
+  }
   function renderScanQuota(){
     var el = document.getElementById("scanQuota");
     if(!el) return;
     var icon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.2"/><path d="M12 7.5v5l3 2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     if(state.premium){
       el.innerHTML = icon + (premiumScansLeft === null
-        ? '<span><b>Abonnement actif : 35 scans inclus par mois.</b> Le compteur repart le 1er du mois.</span>'
+        ? '<span><b>Abonnement actif : ' + PREMIUM_SCANS_PER_MONTH + ' scans inclus par mois.</b> Le compteur repart le 1er du mois.</span>'
         : '<span><b>Abonnement actif : il te reste ' + premiumScansLeft + ' scan(s) inclus ce mois-ci.</b> Le compteur repart le 1er du mois.</span>');
     } else {
       el.innerHTML = icon + '<span><b>1 scan gratuit par compte — usage unique.</b> Ensuite, 1 crédit par scan' +
         (state.credits > 0 ? ' (il t\'en reste ' + state.credits + ')' : '') +
-        ', ou 35 scans par mois avec l\'abonnement.</span>';
+        ', ou ' + PREMIUM_SCANS_PER_MONTH + ' scans par mois avec l\'abonnement.</span>';
     }
   }
 
