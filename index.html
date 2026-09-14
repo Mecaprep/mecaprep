@@ -1244,7 +1244,9 @@
         <p style="margin:0 0 6px;font-weight:700;">Vérifie tes emails</p>
         <p style="color:var(--c-dim);margin:0 0 18px;" id="signupWaitingEmail">Un email de confirmation vient d'être envoyé.</p>
         <p style="color:var(--c-dim);font-size:.85rem;margin:0;">Cette fenêtre continue automatiquement dès que tu as confirmé — pas besoin de revenir ici.</p>
-        <button type="button" class="btn btn-ghost btn-block" id="signupWaitingCancel" style="margin-top:18px;">Annuler</button>
+        <p style="color:var(--c-dim);font-size:.85rem;margin:10px 0 0;">Rien reçu ? Regarde dans tes spams.</p>
+        <button type="button" class="btn btn-outline btn-block" id="signupWaitingResend" style="margin-top:14px;">Renvoyer l'email</button>
+        <button type="button" class="btn btn-ghost btn-block" id="signupWaitingCancel" style="margin-top:10px;">Annuler</button>
       </div>
     </div>
   </div>
@@ -3318,8 +3320,10 @@
      tabs via localStorage, so confirming in a second tab (opened from the
      Mail app) resumes this one automatically, with no manual reconnect. */
   var awaitingEmailConfirmation = false;
+  var pendingSignupEmail = null;
   function showSignupWaiting(email){
     awaitingEmailConfirmation = true;
+    pendingSignupEmail = email;
     signupFormWrap.style.display = "none";
     signupWaiting.style.display = "";
     document.getElementById("signupWaitingEmail").textContent = email ? "Un email de confirmation a été envoyé à " + email + "." : "Un email de confirmation vient d'être envoyé.";
@@ -3360,6 +3364,23 @@
   }
   document.getElementById("signupClose").addEventListener("click", closeSignupGate);
   document.getElementById("signupWaitingCancel").addEventListener("click", closeSignupGate);
+  document.getElementById("signupWaitingResend").addEventListener("click", async function(){
+    if(!supa || !pendingSignupEmail) return;
+    var btn = this;
+    btn.disabled = true;
+    var res = await supa.auth.resend({
+      type: "signup",
+      email: pendingSignupEmail,
+      options: { emailRedirectTo: location.origin + location.pathname }
+    });
+    btn.disabled = false;
+    if(res.error){
+      var rateLimited = res.error.code === "over_email_send_rate_limit" || /rate limit|seconds/i.test(res.error.message || "");
+      toast(rateLimited ? "Trop d'envois pour le moment — réessaie dans quelques minutes." : "Impossible de renvoyer l'email — réessaie.");
+    } else {
+      toast("Nouvel email envoyé.");
+    }
+  });
   signupSkipBtn.addEventListener("click", closeSignupGate);
   signupScrim.addEventListener("click", function(ev){ if(ev.target === signupScrim) closeSignupGate(); });
   /* Real Supabase Auth. The form has a single pair of fields (no separate
@@ -3430,6 +3451,16 @@
     if(signUp.data && signUp.data.session){
       toast("Compte créé.");
       afterAuth(email);
+      return;
+    }
+    /* Supabase answers a sign-up for an already-registered email with a
+       fake success (no error, no session, empty identities) and sends no
+       email, so it can't be used to probe which addresses have accounts.
+       Reaching here means the sign-in above already failed, i.e. the
+       password was wrong — the waiting screen would wait forever. */
+    var identities = signUp.data && signUp.data.user && signUp.data.user.identities;
+    if(identities && identities.length === 0){
+      errorEl.textContent = "Un compte existe déjà avec cet email — vérifie ton mot de passe.";
       return;
     }
     /* Signed up but no session yet: this Supabase project requires email
