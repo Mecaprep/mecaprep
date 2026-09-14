@@ -1201,7 +1201,7 @@
 <div class="scrim" id="signupScrim">
   <div class="modal">
     <div class="modal-head">
-      <h3>Crée ton compte</h3>
+      <h3>Connexion / Inscription</h3>
       <button class="modal-close" id="signupClose" aria-label="Fermer">✕</button>
     </div>
     <div class="modal-body">
@@ -1223,7 +1223,7 @@
             <input type="password" id="signupPassword" name="password" autocomplete="new-password" minlength="6" required>
           </div>
           <div class="field-error" id="signupError"></div>
-          <button type="submit" class="btn btn-primary btn-block">Créer mon compte et continuer</button>
+          <button type="submit" class="btn btn-primary btn-block">Continuer</button>
         </form>
         <div class="price-note" style="margin-top:12px;">Gratuit, sans engagement — aucun paiement n'est demandé à cette étape.</div>
         <button type="button" class="btn btn-ghost btn-block" id="signupSkip" style="margin-top:10px;display:none;">Voir mon résultat</button>
@@ -3323,8 +3323,24 @@
     signupWaiting.style.display = "none";
     signupFormWrap.style.display = "";
   }
-  function requireAccount(onReady){
-    if(state.hasAccount){ onReady(); return; }
+  /* state.hasAccount is a locally-cached flag, faster to check than asking
+     Supabase every time — but caching means it can go stale (a page open
+     for hours whose token refresh hiccuped, a save that lost a race with
+     a tab close right after sign-up...). Rather than trust it blindly and
+     risk showing "crée un compte" to someone who's genuinely still signed
+     in, a false reading is double-checked against the real session before
+     the gate opens; a true reading still opens instantly. */
+  async function hasRealSession(){
+    if(!supa) return false;
+    try{
+      var res = await supa.auth.getSession();
+      var session = res && res.data && res.data.session;
+      if(session){ state.hasAccount = true; state.accountEmail = session.user.email; saveState(); }
+      return !!session;
+    }catch(e){ return false; }
+  }
+  async function requireAccount(onReady){
+    if(state.hasAccount || await hasRealSession()){ onReady(); return; }
     signupCallback = onReady;
     signupSkipCallback = null;
     signupSkipBtn.style.display = "none";
@@ -3333,8 +3349,8 @@
     hideSignupWaiting();
     signupScrim.classList.add("open");
   }
-  function requireAccountOrSkip(onReady, skipLabel){
-    if(state.hasAccount){ onReady(); return; }
+  async function requireAccountOrSkip(onReady, skipLabel){
+    if(state.hasAccount || await hasRealSession()){ onReady(); return; }
     signupCallback = onReady;
     signupSkipCallback = onReady;
     signupSkipBtn.style.display = "block";
