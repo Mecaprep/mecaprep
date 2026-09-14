@@ -29,7 +29,8 @@ const MAX_IMAGE_BASE64_CHARS = 6_500_000; // ≈ 4.9 MB decoded, under the API's
 const MAX_TARGETS_CHARS = 12_000;
 const ALLOWED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
 
-const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -67,6 +68,9 @@ function buildPrompt(targets: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
+  if (!ANTHROPIC_API_KEY) {
+    return json({ error: "Le scanner n'est pas encore activé — réessaie bientôt." }, 503);
+  }
 
   try {
     const authHeader = req.headers.get("Authorization");
