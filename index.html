@@ -203,6 +203,8 @@
   .status-dot{width:8px;height:8px;border-radius:50%;background:var(--c-line-strong);}
   .status-pill.is-premium{background:var(--signal);color:var(--ink);}
   .status-pill.is-premium .status-dot{background:var(--ink);}
+  .status-pill svg{flex:none;}
+  .status-pill:hover, .status-pill:focus-visible{border-color:var(--signal);}
   .hamburger{display:none !important;}     /* kept for the script; the tab bar replaces it */
 
   @media (max-width:1240px){ .navlinks a{padding:0 11px;} .navlinks a i{display:none;} }
@@ -812,7 +814,10 @@
     </nav>
     <div class="nav-right">
       <a href="#/quiz" class="btn btn-primary nav-cta">Commencer</a>
-      <span class="status-pill" id="statusPill" role="button" tabindex="0" title="Mon compte" style="cursor:pointer;"><span class="status-dot"></span><span id="statusLabel">Gratuit</span></span>
+      <span class="status-pill" id="statusPill" role="button" tabindex="0" title="Mon compte" style="cursor:pointer;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2.2"/><path d="M4 20c0-3.6 3.6-6 8-6s8 2.4 8 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <span class="status-dot"></span><span id="statusLabel">Gratuit</span>
+      </span>
       <button class="hamburger" id="hamburgerBtn" aria-label="Ouvrir le menu" aria-expanded="false" tabindex="-1"><span></span></button>
     </div>
   </div>
