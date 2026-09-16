@@ -558,6 +558,8 @@
   .foot-tag{font-family:var(--f-mono);font-size:.74rem;color:var(--c-dim);letter-spacing:.04em;max-width:30ch;}
   .foot-grid{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-top:22px;}
   .foot-links{display:flex;gap:22px;font-family:var(--f-mono);font-size:.74rem;color:var(--c-dim);flex-wrap:wrap;}
+  .foot-links a{color:inherit;font:inherit;text-decoration:none;}
+  .foot-links a:hover{color:var(--c-fg);text-decoration:underline;}
   .foot-note{font-size:.74rem;color:var(--c-dimmer);margin-top:14px;max-width:100ch;line-height:1.55;}
 
   /* ---------- modals ---------- */
@@ -1154,7 +1156,7 @@
       <p class="foot-tag">Préparé par des mécanos, pour des mécanos.</p>
     </div>
     <div class="foot-grid">
-      <div class="foot-links"><span>CGU</span><span>Confidentialité</span><span>Contact</span></div>
+      <div class="foot-links"><span>CGU</span><span>Confidentialité</span><a href="mailto:contact.mecaprep@gmail.com">Contact</a></div>
     </div>
     <div class="foot-note">Paiements traités par Stripe · comptes gérés par Supabase — MecaPrep ne stocke jamais tes identifiants de paiement.</div>
     <div class="foot-note">Fiabilité du contenu : les questions marquées « source officielle » s'appuient sur des documents publics Éduscol/BNSEEP (référentiels, sujets et corrigés d'examen). Les fiches Pannes &amp; Diagnostic marquées « source vérifiée » s'appuient sur des ressources techniques automobiles en ligne (garages, réseaux de pièces détachées). Les autres questions, marquées « vérifié par un mécano », reposent sur les connaissances du métier et ont été relues par un mécanicien professionnel.</div>
