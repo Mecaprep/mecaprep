@@ -2039,13 +2039,27 @@
   function themeQuestionCount(t){
     return t.subcats.reduce(function(sum, s){ return sum + s.questions.length; }, 0);
   }
+  /* The question bank's correct answer sits at index 0 or 1 in almost
+     every question (an authoring habit, not a bug in the content itself)
+     — so without this, "always try A or B" is a working exam strategy.
+     Returns a fresh object per question: the shared THEMES/DIAGNOSTICS
+     data is never mutated, and the same question reshuffles differently
+     on its next appearance. */
+  function shuffleOptions(q){
+    var order = q.opts.map(function(_, i){ return i; });
+    for(var i = order.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+    }
+    return { q:q.q, opts:order.map(function(i){ return q.opts[i]; }), a:order.indexOf(q.a), e:q.e, src:q.src };
+  }
   function pickRandom(arr, n){
     var copy = arr.slice();
     for(var i = copy.length - 1; i > 0; i--){
       var j = Math.floor(Math.random() * (i + 1));
       var tmp = copy[i]; copy[i] = copy[j]; copy[j] = tmp;
     }
-    return copy.slice(0, Math.min(n, copy.length));
+    return copy.slice(0, Math.min(n, copy.length)).map(shuffleOptions);
   }
 
   /* ---------------- state ---------------- */
