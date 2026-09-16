@@ -75,7 +75,24 @@ Deno.serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
+    // A stored customer id can point at nothing the current Stripe key can
+    // see — most commonly a test-mode id left over from before switching
+    // STRIPE_SECRET_KEY to a live key (test and live customers live in
+    // completely separate namespaces). Verify it resolves before reusing
+    // it; a missing/deleted customer is treated the same as having none.
     let customerId = existing?.stripe_customer_id as string | null | undefined;
+    if (customerId) {
+      try {
+        const customer = await stripe.customers.retrieve(customerId);
+        if (customer.deleted) customerId = null;
+      } catch (e) {
+        if (e instanceof Stripe.errors.StripeInvalidRequestError && e.code === "resource_missing") {
+          customerId = null;
+        } else {
+          throw e;
+        }
+      }
+    }
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email ?? undefined,
